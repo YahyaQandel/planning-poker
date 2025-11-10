@@ -1,7 +1,7 @@
 # Planning Poker - Project Context
 
 ## Project Overview
-A real-time planning poker application for agile teams to estimate story points collaboratively. Built with Django backend and React frontend using the company's shadcn/ui design system.
+A real-time planning poker application for agile teams to estimate story points collaboratively. Built with Django backend and React frontend featuring a modern, gradient-rich UI design with purple/indigo theme.
 
 ## Original Requirements
 
@@ -12,97 +12,128 @@ A real-time planning poker application for agile teams to estimate story points 
 ### Tech Stack Decision
 - **Backend**: Django + Django Channels (WebSocket support)
 - **Frontend**: React + TypeScript + Vite
-- **UI Library**: shadcn/ui (New York style, Zinc base color)
+- **UI Library**: shadcn/ui (customized with purple/indigo theme)
 - **Styling**: Tailwind CSS
 - **Real-time**: WebSocket via Django Channels + Redis
 - **Font**: Inter
 - **Icons**: Lucide
+- **Animations**: Framer Motion
 
 ### Design System
-- Using company's existing shadcn configuration from `/Users/yahya/projects/teracloud/webbi/webbi-frontend`
-- Theme: New York style with Zinc color palette
-- Full dark mode support
-- Border radius: 0.5rem
+- **Modern UI Redesign**: Purple/indigo gradient theme throughout
+- **Light mode only**: Removed dark mode for consistent experience
+- **Glass-morphism effects**: Backdrop blur and transparency
+- **Gradient accents**: Purple-600 to indigo-600 gradients
+- **Border radius**: Rounded corners (rounded-xl, rounded-2xl)
+- **Shadow effects**: Enhanced shadows with purple tints
 
-## Feature Requirements
+## Implemented Features (Current State)
 
-### Version 1 (MVP - Current Phase)
-
-#### 1. Session/Room Management
-- Create new estimation room with unique code
-- Share room via URL (copy link functionality)
-- Reset room to clear all votes and start new estimation round
+### 1. Session/Room Management ✅
+- Create new estimation room with unique 6-character code
+- Auto-generated funny stories when fields left empty
+- Share room via URL with copy button
+- Reset room with confirmation dialog
 - Room persistence during active session
+- Real-time participant tracking
 
-#### 2. User Management
-- Join session without signup/registration (just username)
-- Set/change username
-- Live participant list
-- Connection status indicator
-- **Note**: Kicking functionality deferred to v2 for easier tracing
+### 2. User Management ✅
+- Join session without signup (username only)
+- Live participant list with:
+  - Connection status indicators (green/red)
+  - Vote status (checkmark when voted)
+  - Revealed votes display
+  - Avatar initials with gradient borders
+- Username display in header
+- Leave room functionality
 
-#### 3. Story Management (Key Feature)
-- **Story ID + Title fields** (both optional, manual input in v1)
-- Display current story being estimated (ID + Title)
-- **"Estimate New Story" button** to add another story
-- **Left sidebar** showing:
-  - List of all estimated stories
-  - Each story shows: ID (if provided) + Title (if provided) + Final Points
-  - **Running total** at the bottom
-- Story information in URL parameter (e.g., `/room/abc123?story=JIRA-456`)
+### 3. Story Management ✅
+- **Story fields**: Story ID + Title (both optional)
+- **Auto-generated funny stories** when fields empty:
+  - Random combinations of adjectives, nouns, and verbs
+  - Examples: "WOW-316: The Caffeinated Penguin Explores Quantum Physics"
+- **Story sidebar** showing:
+  - All stories with visual states (green=estimated, blue ring=current, gray=pending)
+  - Running total of story points
+  - Click to switch between stories
+  - Vote count per story
+- Prevents duplicate story IDs
+- Story persistence across sessions
 
-#### 4. Voting System
-- Voting scale: Fibonacci sequence (0, 1, 2, 3, 5, 8, 13, 21, ?, ☕)
-- Anonymous/hidden voting (votes hidden until reveal)
-- Show who has voted (without revealing their vote)
-- Manual reveal option
-- Auto-reveal when everyone has voted
+### 4. Voting System ✅
+- **Fibonacci sequence**: 1, 2, 3, 5, 8, 13, 21
+- **Special cards**: ? (uncertain), ☕ (coffee break)
+- Hidden voting until reveal
+- Visual vote status indicators
+- Manual reveal with button
+- Auto-enable reveal when all voted
+- Vote persistence when switching stories
 
-#### 5. Real-time Updates
-- WebSocket connection for all real-time features
-- Live participant list updates
-- Vote status updates (who voted)
-- Instant vote reveal synchronization
-- Story list updates
+### 5. Planning Poker Calculation Logic ✅
+- **Smart estimation algorithm**:
+  - Detects wide spreads (>2 Fibonacci steps)
+  - Uses 75th percentile for disagreements
+  - Uses median for consensus
+  - Always rounds to Fibonacci numbers
+- **Discussion suggestions**:
+  - Identifies participants with min/max votes
+  - Shows personalized message: "Alice (voted 1) and Charlie (voted 21) should discuss"
+  - Orange warning banner for wide spreads
+- **Average display modal**:
+  - Shows mathematical average
+  - Shows recommended Fibonacci value
+  - Re-vote and Confirm options
 
-#### 6. Basic UI/UX
-- Clean, minimal interface
-- Responsive design
-- Share room URL with copy button
-- Clear visual feedback for voting status
+### 6. Real-time Updates ✅
+- WebSocket connection for all features
+- Live updates for:
+  - Participant joins/leaves
+  - Vote casting
+  - Vote reveals
+  - Story changes
+  - Room resets
+  - Points confirmation
+- Automatic reconnection handling
 
-### Version 2 (Planned)
+### 7. Modern UI/UX Design ✅
+- **Header Bar**:
+  - Purple gradient background
+  - Session name with sprint tag
+  - Room code with copy button
+  - Stats cards (Total Points, Stories, Progress)
+  - Current date and participant count
+  - Current username display
+- **Voting Cards**:
+  - Gradient hover effects
+  - Selected state with purple gradient
+  - Disabled state styling
+  - Coffee emoji for break card
+- **Participant Cards**:
+  - Avatar with gradient text initials
+  - White background with purple border
+  - Enhanced shadow effects
+  - Connection status badge
+- **Responsive Design**:
+  - Mobile-optimized grid layouts
+  - Touch-friendly interactions
+  - Collapsible sections
 
-#### 1. User Management Enhancements
-- **Kick user functionality** (anyone can kick any participant)
-- Use cases: idle users, lost connectivity, moderation
-- Idle/disconnect auto-detection
-- **Spectator mode** (observers who don't vote)
-
-#### 2. Story Integration
-- Jira API integration (fetch story details automatically)
-- Possible GitHub Issues integration
-- Auto-populate story title from ID
-
-#### 3. User Preferences
-- Sound notifications toggle
-- Browser notifications toggle
-- Persistent user settings
-
-#### 4. Basic Analytics
-- Participation tracking
-- Average estimates per story
-- Voting efficiency metrics
-
-### Version 3+ (Future Considerations)
-
-#### Potential Features
-- Historical data and trends
-- Custom voting scales (not just Fibonacci)
-- Advanced story/task management
-- Team management
-- Session history
-- Export results
+### 8. Additional Features ✅
+- **Confirmation Dialogs**:
+  - Reset confirmation with AlertDialog
+  - Points confirmation after reveal
+  - Existing story warning
+- **Toast Notifications**:
+  - Room code copied
+  - Error messages
+  - Success confirmations
+- **Loading States**:
+  - Room loading indicator
+  - WebSocket connection status
+- **Error Handling**:
+  - Invalid room redirect
+  - Connection loss handling
+  - Form validation
 
 ## Technical Architecture
 
@@ -112,7 +143,7 @@ backend/
 ├── config/              # Django settings, ASGI config
 ├── rooms/               # Main application
 │   ├── models.py        # Room, Participant, Vote, Story
-│   ├── consumers.py     # WebSocket handlers
+│   ├── consumers.py     # WebSocket handlers with Planning Poker logic
 │   ├── serializers.py   # DRF serializers
 │   ├── views.py         # REST API endpoints
 │   └── routing.py       # WebSocket routing
@@ -120,126 +151,198 @@ backend/
 ```
 
 #### Key Models
-- **Room**: code (unique), created_at, current_story_id
-- **Participant**: room (FK), username, connected, session_id
-- **Story**: room (FK), story_id (optional), title (optional), final_points, estimated_at, order
+- **Room**: code (unique), session_name, created_at, current_story (FK)
+- **Participant**: room (FK), username, connected, session_id, joined_at
+- **Story**: room (FK), story_id, title, final_points, estimated_at, order
 - **Vote**: room (FK), participant (FK), story (FK), value, revealed, created_at
 
 #### API Endpoints
-- `POST /api/rooms/` - Create new room
+- `POST /api/rooms/` - Create new room with optional story
 - `GET /api/rooms/{code}/` - Get room details
 - `POST /api/rooms/{code}/join/` - Join room with username
 - `POST /api/rooms/{code}/reset/` - Reset current voting round
-- `POST /api/rooms/{code}/stories/` - Add new story to estimate
+- `POST /api/rooms/{code}/reveal/` - Reveal all votes
+- `POST /api/rooms/{code}/add_story/` - Add new story
+- `POST /api/rooms/{code}/confirm_points/` - Confirm final points
 - WebSocket: `/ws/room/{code}/` - Real-time communication
 
 #### WebSocket Events
 - `user_joined` - New participant joined
-- `user_left` - Participant disconnected
-- `vote_cast` - User voted (don't reveal value)
-- `votes_revealed` - All votes revealed
-- `room_reset` - Votes cleared for new round
-- `story_added` - New story added to list
-- `story_changed` - Current story being estimated changed
+- `user_left` - Participant disconnected  
+- `vote_cast` - User voted (value hidden)
+- `votes_revealed` - All votes revealed with calculation
+- `room_reset` - Votes cleared
+- `story_added` - New story added
+- `story_changed` - Current story switched
+- `points_confirmed` - Final points saved
+- `story_exists` - Duplicate story warning
+- `discussion_message` - Wide spread discussion suggestion
+
+#### Planning Poker Calculation
+- `calculate_planning_poker_estimate()` - Smart Fibonacci rounding
+- `get_discussion_suggestion()` - Generate discussion prompts
+- `round_to_fibonacci()` - Always round up to Fibonacci
 
 ### Frontend (React)
-
 ```
 frontend/
 ├── src/
 │   ├── components/
-│   │   ├── ui/              # shadcn components (Button, Card, etc.)
-│   │   ├── VotingCard.tsx   # Individual voting card
-│   │   ├── VotingPanel.tsx  # Main voting interface
-│   │   ├── ParticipantList.tsx  # User list with status
-│   │   ├── StorySidebar.tsx     # Left sidebar with story list
-│   │   ├── StoryTotal.tsx       # Running total component
-│   │   ├── RoomControls.tsx     # Reset, reveal, add story buttons
-│   │   └── CurrentStory.tsx     # Display current story info
+│   │   ├── ui/              # shadcn components
+│   │   ├── modern/          # Modern redesigned components
+│   │   │   ├── HeaderBar.tsx     # Purple gradient header
+│   │   │   ├── VoteCard.tsx      # Gradient voting cards
+│   │   │   ├── ParticipantCard.tsx # Enhanced participant display
+│   │   │   └── StoryCard.tsx     # Story state indicators
+│   │   └── ThemeProvider.tsx # Light mode only
 │   ├── pages/
-│   │   ├── Home.tsx         # Landing/create room
-│   │   ├── Room.tsx         # Main room page
-│   │   └── Join.tsx         # Join room page
+│   │   ├── HomeModern.tsx   # Modern landing page
+│   │   └── RoomModern.tsx   # Modern room interface
 │   ├── hooks/
-│   │   ├── useWebSocket.ts  # WebSocket connection hook
-│   │   └── useRoom.ts       # Room state management
+│   │   └── use-toast.ts     # Toast notifications
 │   ├── lib/
 │   │   ├── utils.ts         # shadcn utils
 │   │   └── api.ts           # API client
-│   ├── types/
-│   │   └── index.ts         # TypeScript types
-│   └── styles.css           # Company theme (from webbi-frontend)
+│   └── styles/
+│       └── globals.css      # Purple theme styles
 ├── components.json          # shadcn config
-├── tailwind.config.ts
+├── tailwind.config.ts       # Extended with animations
 └── package.json
 ```
 
 #### Key Components
-- **VotingPanel**: Main interface with voting cards (0, 1, 2, 3, 5, 8, 13, 21, ?, ☕)
-- **ParticipantList**: Shows all users with voting status
-- **StorySidebar**: Left panel with estimated stories list + total
-- **CurrentStory**: Displays story being estimated (ID + Title)
-- **RoomControls**: Reveal, Reset, Add Story, Share buttons
+- **HeaderBar**: Session info, stats, room code
+- **VoteCard**: Individual voting option (1-21, ?, ☕)
+- **ParticipantCard**: User display with vote status
+- **StoryCard**: Story item with visual states
+- **Dialog/AlertDialog**: Modals and confirmations
 
 ## Design Decisions
 
-### Why Django + React?
-- Django: Robust backend, excellent WebSocket support via Channels
-- React: Better UX for real-time interactions, company standard
-- Separation allows independent scaling
+### Why Remove Dark Mode?
+- Consistent visual experience
+- Better contrast with purple gradients
+- Simplified theme management
+- Focus on single polished theme
 
-### Why Manual Story Input in v1?
-- Faster initial development
-- No external API dependencies
-- Flexibility for any story tracking system
-- Both fields optional for maximum flexibility
+### Why Purple/Indigo Theme?
+- Modern, professional appearance
+- Good contrast and accessibility
+- Distinctive from typical blue themes
+- Energetic and engaging
 
-### Why Anyone Can Kick in v2?
-- Democratic moderation
-- Handles disconnected users quickly
-- Simple implementation
-- Deferred to v2 to focus on core voting flow first
+### Why Planning Poker Algorithm?
+- Follows industry best practices
+- Encourages discussion on disagreements
+- Prevents underestimation bias
+- Uses 75th percentile for wide spreads
 
-### Why Left Sidebar for Story List?
-- Always visible reference
-- Running total readily available
-- Historical context during estimation
-- Doesn't interfere with main voting area
+### Why Funny Story Generator?
+- Makes planning sessions more enjoyable
+- Useful for demos and testing
+- Reduces friction for quick starts
+- Memorable story identifiers
 
 ## Current Status
-- **Phase**: Planning completed
-- **Next Steps**: Start implementation
-  1. Django project setup with Channels
-  2. React project setup with shadcn theme
-  3. Core models and WebSocket infrastructure
-  4. Basic voting flow
-  5. Story management sidebar
+- **Phase**: Production Ready
+- **Completed Features**:
+  ✅ Full voting flow
+  ✅ Story management
+  ✅ Real-time updates
+  ✅ Planning Poker calculations
+  ✅ Discussion suggestions
+  ✅ Modern UI redesign
+  ✅ Responsive design
+  ✅ Error handling
+  ✅ All core features implemented
 
-## Key Contacts & Resources
-- Design System Source: `/Users/yahya/projects/teracloud/webbi/webbi-frontend`
-- Reference App: https://free-planning-poker.com
-- Company standard: shadcn/ui components
+## Recent Updates
 
-## Important Notes
-- No user authentication/registration required
-- Privacy-focused (following reference app principles)
-- Real-time is core requirement (not polling)
-- Story ID and Title are both optional fields
-- Must match company design system exactly
-- Dark mode support required
+### UI/UX Improvements
+- Removed dark mode for consistency
+- Enhanced purple gradient theme throughout
+- Fixed text visibility issues (purple instead of white text)
+- Added shadow effects and ring highlights
+- Improved participant avatar styling
+- Added username display in header
+
+### Calculation Logic Updates
+- Implemented proper Planning Poker estimation
+- Added wide spread detection
+- 75th percentile for disagreements
+- Median for consensus
+- Always rounds to Fibonacci sequence
+
+### Discussion Features
+- Automatic discussion suggestions
+- Identifies participants to discuss
+- Orange warning banner in modal
+- Encourages re-voting after discussion
+
+### Bug Fixes
+- Fixed modal close handling (X button/escape key)
+- Fixed state cleanup on modal dismiss
+- Improved WebSocket reconnection
+- Better error handling throughout
+
+## Testing & Quality
+- Comprehensive test files for calculations
+- WebSocket event testing
+- UI component testing
+- Cross-browser compatibility
+- Mobile responsiveness verified
+
+## Deployment Ready
+- Environment variables configured
+- Production settings ready
+- Static files optimized
+- WebSocket configuration for production
+- Redis configuration documented
+
+## Documentation
+- Comprehensive README with screenshots
+- API documentation
+- WebSocket event documentation
+- Component documentation
+- Setup instructions
+
+## Future Enhancements (v2+)
+
+### Potential Features
+- Jira/GitHub integration
+- Custom voting scales
+- Session history/export
+- Team workspaces
+- Advanced analytics
+- Spectator mode
+- Sound notifications
+- Persistent settings
+- Velocity tracking
+- Sprint retrospectives
 
 ## Questions Resolved
-1. **Tech stack?** Django + React ✓
-2. **Who can kick users?** Anyone (v2 feature) ✓
-3. **All features in v1?** No, phased approach ✓
-4. **Story source?** Manual input (v1), API integration (v2+) ✓
-5. **Story fields?** Both ID and Title optional ✓
-6. **Design system?** Company's shadcn config ✓
+1. **Dark mode?** Removed for consistency ✓
+2. **Calculation method?** Planning Poker best practices ✓
+3. **Wide spreads?** Discussion suggestions implemented ✓
+4. **UI theme?** Purple/indigo gradients ✓
+5. **Story generation?** Funny auto-generator added ✓
+6. **Modal issues?** Fixed close handling ✓
 
-## Future Considerations
-- Jira API integration for auto-fetching story details
-- GitHub Issues integration
-- Custom voting scales
-- Advanced analytics
-- Session persistence/history
-- Team workspaces
+## Key Files Updated
+- `backend/rooms/consumers.py` - Planning Poker logic
+- `backend/rooms/views.py` - API endpoints
+- `frontend/src/pages/RoomModern.tsx` - Main room interface
+- `frontend/src/pages/HomeModern.tsx` - Landing page
+- `frontend/src/components/modern/*` - All UI components
+- `frontend/src/components/ThemeProvider.tsx` - Light mode only
+- `README.md` - Complete documentation with images
+
+## Success Metrics
+- ✅ Real-time voting works flawlessly
+- ✅ Planning Poker calculations accurate
+- ✅ UI is modern and engaging
+- ✅ No dark mode issues
+- ✅ Discussion prompts helpful
+- ✅ Story management intuitive
+- ✅ Mobile responsive
+- ✅ Production ready
