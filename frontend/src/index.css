@@ -1,11 +1,25 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
+
+* {
+  @apply border-border;
+}
 
 body {
   margin: 0;
   font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  @apply bg-background text-foreground;
+  background-attachment: fixed;
+}
+
+html.light body {
+  background: linear-gradient(135deg, #667eea15 0%, #f3e7f915 50%, #764ba215 100%);
+}
+
+html.dark body {
+  background: linear-gradient(135deg, #1e1b4b 0%, #0f0c29 50%, #24243e 100%);
 }
 
 code {
@@ -24,16 +38,16 @@ code {
   --color-popover-foreground: 240 10% 3.9%;
   --color-primary: 240 5.9% 10%;
   --color-primary-foreground: 0 0% 98%;
-  --color-secondary: 240 4.8% 95.9%;
+  --color-secondary: 250 100% 97%;
   --color-secondary-foreground: 240 5.9% 10%;
-  --color-muted: 240 4.8% 95.9%;
+  --color-muted: 250 100% 98%;
   --color-muted-foreground: 240 3.8% 46.1%;
-  --color-accent: 240 4.8% 95.9%;
+  --color-accent: 250 100% 97%;
   --color-accent-foreground: 240 5.9% 10%;
   --color-destructive: 0 84.2% 60.2%;
   --color-destructive-foreground: 0 0% 98%;
-  --color-border: 240 5.9% 90%;
-  --color-input: 240 5.9% 90%;
+  --color-border: 250 50% 88%;
+  --color-input: 250 100% 98%;
   --color-ring: 240 5.9% 10%;
 
   --radius-sm: calc(var(--radius) - 4px);
@@ -42,7 +56,7 @@ code {
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-@media (prefers-color-scheme: dark) {
+html.dark {
   @theme {
     --color-background: 240 10% 3.9%;
     --color-foreground: 0 0% 98%;

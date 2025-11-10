@@ -10,6 +10,7 @@ class RoomConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_code = self.scope['url_route']['kwargs']['room_code']
         self.room_group_name = f'room_{self.room_code}'
+        self.participant_id = None
 
         # Join room group
         await self.channel_layer.group_add(
@@ -20,6 +21,21 @@ class RoomConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
     async def disconnect(self, close_code):
+        # Mark participant as disconnected if we have their ID
+        if self.participant_id:
+            await self.mark_user_disconnected(self.participant_id)
+            room_data = await self.get_room_data()
+
+            # Broadcast user disconnection to room
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'user_left_broadcast',
+                    'participant_id': self.participant_id,
+                    'room': room_data
+                }
+            )
+
         # Leave room group
         await self.channel_layer.group_discard(
             self.room_group_name,
@@ -167,6 +183,20 @@ class RoomConsumer(AsyncWebsocketConsumer):
 
     async def handle_user_joined(self, data):
         username = data.get('username')
+        participant_id = data.get('participant_id')
+        
+        # Store participant ID for disconnection handling
+        if participant_id:
+            self.participant_id = participant_id
+            # Ensure participant is marked as connected
+            await self.mark_user_connected(participant_id)
+        elif username:
+            # Fallback: find participant by username if ID not provided
+            participant = await self.get_participant_by_username(username)
+            if participant:
+                self.participant_id = participant['id']
+                await self.mark_user_connected(self.participant_id)
+
         room_data = await self.get_room_data()
 
         # Broadcast user joined to room
@@ -402,6 +432,29 @@ class RoomConsumer(AsyncWebsocketConsumer):
             participant.save()
         except Participant.DoesNotExist:
             pass
+
+    @database_sync_to_async
+    def mark_user_connected(self, participant_id):
+        from .models import Participant
+
+        try:
+            participant = Participant.objects.get(id=participant_id)
+            participant.connected = True
+            participant.save()
+        except Participant.DoesNotExist:
+            pass
+
+    @database_sync_to_async
+    def get_participant_by_username(self, username):
+        from .models import Participant, Room
+        from .serializers import ParticipantSerializer
+
+        try:
+            room = Room.objects.get(code=self.room_code)
+            participant = Participant.objects.get(room=room, username=username)
+            return ParticipantSerializer(participant).data
+        except Participant.DoesNotExist:
+            return None
 
     @database_sync_to_async
     def get_room_data(self):

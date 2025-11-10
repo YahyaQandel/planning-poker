@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { Copy, RefreshCw, Eye, Plus } from 'lucide-react';
+import { Copy, RefreshCw, Eye, Plus, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -80,6 +80,7 @@ export default function Room() {
           websocket?.send(JSON.stringify({
             type: 'user_joined',
             username,
+            participant_id: data.participant.id,
           }));
         };
 
@@ -145,8 +146,18 @@ export default function Room() {
           console.error('WebSocket error:', error);
         };
 
-        websocket.onclose = () => {
-          console.log('WebSocket disconnected');
+        websocket.onclose = (event) => {
+          console.log('WebSocket disconnected', event.code, event.reason);
+          
+          // If not a clean close and we're still on the page, attempt to reconnect after a short delay
+          if (event.code !== 1000 && event.code !== 1001) {
+            console.log('Attempting to reconnect in 2 seconds...');
+            setTimeout(() => {
+              if (document.visibilityState === 'visible') {
+                window.location.reload();
+              }
+            }, 2000);
+          }
         };
 
         setWs(websocket);
@@ -159,8 +170,19 @@ export default function Room() {
 
     joinRoom();
 
+    // Handle page visibility changes
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && websocket && websocket.readyState !== WebSocket.OPEN) {
+        console.log('Tab became visible, reconnecting...');
+        joinRoom();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     // Cleanup function
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (websocket && websocket.readyState === WebSocket.OPEN) {
         websocket.close();
       }
@@ -168,7 +190,16 @@ export default function Room() {
   }, [code, username, navigate]);
 
   const handleVote = (value: VoteValue) => {
-    if (!room?.current_story || !participantId || !ws || ws.readyState !== WebSocket.OPEN) return;
+    if (!room?.current_story || !participantId) {
+      console.warn('Cannot vote: missing room or participant data');
+      return;
+    }
+
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      console.warn('Cannot vote: WebSocket not connected');
+      alert('Connection lost. Please refresh the page to reconnect.');
+      return;
+    }
 
     setSelectedVote(value);
 
@@ -197,6 +228,8 @@ export default function Room() {
 
     setSelectedVote(null);
     setShowResetConfirm(false);
+    setShowConfirmDialog(false);
+    setCalculationResult(null);
 
     ws.send(JSON.stringify({
       type: 'reset',
@@ -287,7 +320,8 @@ export default function Room() {
   const currentStory = room.current_story_data;
   const votes = currentStory?.votes || [];
   const revealed = votes.length > 0 && votes[0]?.revealed;
-  const allVoted = room.participants.filter(p => p.connected).every(p =>
+  const connectedParticipants = room.participants.filter(p => p.connected);
+  const allVoted = connectedParticipants.length > 0 && connectedParticipants.every(p =>
     votes.some(v => v.participant === p.id)
   );
 
@@ -338,16 +372,53 @@ export default function Room() {
               <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Reset</span>
             </Button>
-            <Button
-              onClick={handleReveal}
-              disabled={!currentStory || votes.length === 0 || revealed || !allVoted}
-              size="sm"
-              className="text-xs sm:text-sm"
-              data-testid="reveal-button"
-            >
-              <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              Reveal
-            </Button>
+            {/* Reveal/Finalize Button Logic */}
+            {currentStory?.final_points ? (
+              // Story is finalized
+              <Button
+                variant="outline"
+                disabled
+                size="sm"
+                className="text-xs sm:text-sm"
+                data-testid="finalized-button"
+              >
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                Finalized ({currentStory.final_points})
+              </Button>
+            ) : revealed ? (
+              // Votes are revealed but not finalized
+              <Button
+                onClick={() => {
+                  // Calculate and show confirmation dialog
+                  const numericVotes = votes.filter(v => !['?', 'coffee'].includes(v.value));
+                  if (numericVotes.length > 0) {
+                    const voteValues = numericVotes.map(v => parseInt(v.value));
+                    const average = voteValues.reduce((a, b) => a + b, 0) / voteValues.length;
+                    const rounded = Math.round(average);
+                    setCalculationResult({ average, rounded });
+                    setShowConfirmDialog(true);
+                  }
+                }}
+                size="sm"
+                className="text-xs sm:text-sm bg-green-600 hover:bg-green-700"
+                data-testid="finalize-button"
+              >
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                Finalize Points
+              </Button>
+            ) : (
+              // Votes not revealed yet
+              <Button
+                onClick={handleReveal}
+                disabled={!currentStory || votes.length === 0 || !allVoted}
+                size="sm"
+                className="text-xs sm:text-sm"
+                data-testid="reveal-button"
+              >
+                <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                Reveal
+              </Button>
+            )}
             <Button
               variant="secondary"
               onClick={() => setShowAddStory(!showAddStory)}
@@ -363,105 +434,139 @@ export default function Room() {
 
         {/* Add Story Form */}
         {showAddStory && (
-          <Card data-testid="add-story-form">
-            <CardContent className="p-4 space-y-3">
-              <div className="flex flex-col sm:flex-row gap-3">
+          <div className="!bg-purple-500 !border-4 !border-red-500 !rounded-3xl !shadow-2xl !p-4" style={{backgroundColor: '#8b5cf6', border: '4px solid #ef4444', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'}} data-testid="add-story-form">
+            <div className="p-6 space-y-4">
+              <div className="text-center mb-4">
+                <div className="w-12 h-12 mx-auto mb-3  from-purple-100 to-indigo-100 rounded-full flex items-center justify-center">
+                  <Plus className="w-6 h-6 text-purple-600" />
+                </div>
+                <h3 className="font-bold text-lg text-purple-800">Add New Story</h3>
+                <p className="text-sm text-purple-600">Create a new story to estimate</p>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-4">
                 <Input
                   placeholder="Story ID (optional)"
                   value={newStoryId}
                   onChange={(e) => setNewStoryId(e.target.value)}
-                  className="flex-1"
+                  className="flex-1 border-purple-200 focus:border-purple-400 focus:ring-purple-400"
                   data-testid="new-story-id-input"
                 />
                 <Input
                   placeholder="Story Title (optional)"
                   value={newStoryTitle}
                   onChange={(e) => setNewStoryTitle(e.target.value)}
-                  className="flex-1"
+                  className="flex-1 border-purple-200 focus:border-purple-400 focus:ring-purple-400"
                   data-testid="new-story-title-input"
                 />
-                <div className="flex gap-2">
-                  <Button onClick={handleAddStory} size="sm" data-testid="add-story-button">Add</Button>
-                  <Button variant="outline" onClick={() => setShowAddStory(false)} size="sm" data-testid="cancel-add-story-button">
-                    Cancel
-                  </Button>
-                </div>
               </div>
-              <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded" data-testid="add-story-tip">
-                💡 Leave empty for a randomly generated funny story!
+              
+              <div className="flex gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowAddStory(false)} 
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300" 
+                  data-testid="cancel-add-story-button"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleAddStory} 
+                  className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg" 
+                  data-testid="add-story-button"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Story
+                </Button>
               </div>
-            </CardContent>
-          </Card>
+              
+              <div className="text-sm text-purple-700 bg-purple-100 p-3 rounded-lg border border-purple-200 text-center" data-testid="add-story-tip">
+                ✨ Leave both fields empty for a randomly generated funny story!
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Existing Story Confirmation */}
         {existingStory && (
-          <Card className="border-orange-500 bg-orange-50" data-testid="existing-story-dialog">
-            <CardContent className="p-4">
-              <div className="space-y-3">
-                <div>
-                  <div className="font-semibold text-lg" data-testid="existing-story-title">Story Already Exists</div>
-                  <div className="text-sm text-muted-foreground mt-1">
-                    Story ID "{existingStory.story_id}" already exists
+          <div className="border-amber-300  from-white via-amber-50 to-orange-100 shadow-2xl backdrop-blur-lg border-2 rounded-3xl ring-1 ring-amber-200/50 overflow-hidden" data-testid="existing-story-dialog">
+            <div className="p-6">
+              <div className="space-y-6">
+                <div className="text-center">
+                  <div className="w-16 h-16 mx-auto mb-4  from-amber-100 to-orange-100 rounded-full flex items-center justify-center">
+                    <Eye className="w-8 h-8 text-amber-600" />
+                  </div>
+                  <div className="font-bold text-xl text-amber-800 mb-2" data-testid="existing-story-title">Story Already Exists</div>
+                  <div className="text-sm text-amber-700 bg-amber-100 rounded-lg p-3 border border-amber-200">
+                    📖 Story ID "<span className="font-medium text-amber-800">"{existingStory.story_id}"</span>" already exists
                     {existingStory.final_points && (
-                      <span className="font-medium"> with {existingStory.final_points} points</span>
+                      <span className="block mt-1">
+                        ✅ <span className="font-bold">Estimated: {existingStory.final_points} points</span>
+                      </span>
                     )}
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   <Button
                     variant="outline"
                     onClick={handleCancelExistingStory}
-                    className="flex-1"
+                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300"
                     data-testid="cancel-existing-story-button"
                   >
+                    <X className="w-4 h-4 mr-2" />
                     Cancel
                   </Button>
                   <Button
                     onClick={handleSwitchToExistingStory}
-                    className="flex-1"
+                    className="flex-1 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white shadow-lg"
                     data-testid="switch-to-existing-story-button"
                   >
+                    <Eye className="w-4 h-4 mr-2" />
                     Switch to This Story
                   </Button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         {/* Reset Confirmation Dialog */}
         {showResetConfirm && (
-          <Card className="border-red-500 bg-red-50" data-testid="reset-confirm-dialog">
-            <CardContent className="p-4">
-              <div className="space-y-3">
-                <div>
-                  <div className="font-semibold text-lg text-red-700" data-testid="reset-confirm-title">Reset All Votes?</div>
-                  <div className="text-sm text-red-600 mt-1">
-                    This will clear all votes for the current story. Everyone will need to vote again.
+          <div className="border-red-300  from-white via-red-50 to-pink-100 shadow-2xl backdrop-blur-lg border-2 rounded-3xl ring-1 ring-red-200/50 overflow-hidden" data-testid="reset-confirm-dialog">
+            <div className="p-6">
+              <div className="space-y-6">
+                <div className="text-center">
+                  <div className="w-16 h-16 mx-auto mb-4  from-red-100 to-red-200 rounded-full flex items-center justify-center">
+                    <RefreshCw className="w-8 h-8 text-red-600" />
+                  </div>
+                  <div className="font-bold text-xl text-red-800 mb-2" data-testid="reset-confirm-title">Reset All Votes?</div>
+                  <div className="text-sm text-red-700 bg-red-100 rounded-lg p-3 border border-red-200">
+                    ⚠️ This will permanently clear all votes for the current story. Everyone will need to vote again.
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   <Button
                     variant="outline"
                     onClick={handleCancelReset}
-                    className="flex-1"
+                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300"
                     data-testid="cancel-reset-button"
                   >
+                    <X className="w-4 h-4 mr-2" />
                     Cancel
                   </Button>
                   <Button
-                    variant="destructive"
                     onClick={handleConfirmReset}
-                    className="flex-1"
+                    className="flex-1 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white shadow-lg"
                     data-testid="confirm-reset-button"
                   >
+                    <RefreshCw className="w-4 h-4 mr-2" />
                     Reset All Votes
                   </Button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
@@ -484,7 +589,7 @@ export default function Room() {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground" data-testid="vote-count">
-                      {votes.length} / {room.participants.filter(p => p.connected).length} voted
+                      {votes.length} / {connectedParticipants.length} voted
                     </span>
                     {allVoted && !revealed && (
                       <span className="text-sm font-medium text-green-600" data-testid="all-voted-indicator">
@@ -529,6 +634,7 @@ export default function Room() {
                   rounded={calculationResult.rounded}
                   onConfirm={handleConfirmPoints}
                   onReject={handleRejectPoints}
+                  onClose={() => setShowConfirmDialog(false)}
                 />
               </div>
             )}
