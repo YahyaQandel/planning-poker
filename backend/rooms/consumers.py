@@ -293,6 +293,9 @@ class RoomConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def get_room_data(self):
         from .models import Room
+        import json
 
         room = Room.objects.get(code=self.room_code)
-        return RoomSerializer(room).data
+        # Convert to JSON and back to ensure all UUIDs are converted to strings
+        serialized_data = RoomSerializer(room).data
+        return json.loads(json.dumps(serialized_data, default=str))
