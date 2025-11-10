@@ -57,6 +57,17 @@ export default function Room() {
         const data = await response.json();
         setRoom(data.room);
         setParticipantId(data.participant.id);
+        
+        // Restore selected vote if user already voted for current story
+        if (data.room.current_story_data?.votes) {
+          const myVote = data.room.current_story_data.votes.find(
+            (vote: any) => vote.participant === data.participant.id
+          );
+          if (myVote) {
+            setSelectedVote(myVote.value as VoteValue);
+          }
+        }
+        
         setLoading(false);
 
         // Connect to WebSocket
@@ -77,6 +88,16 @@ export default function Room() {
 
           if (data.room) {
             setRoom(data.room);
+            
+            // Restore selected vote if user already voted for current story (on room updates)
+            if (data.room.current_story_data?.votes && participantId) {
+              const myVote = data.room.current_story_data.votes.find(
+                (vote: any) => vote.participant === participantId
+              );
+              if (myVote && !selectedVote) {
+                setSelectedVote(myVote.value as VoteValue);
+              }
+            }
           }
 
           // Show confirmation dialog when votes are revealed with average
@@ -106,9 +127,15 @@ export default function Room() {
             setCalculationResult(null);
           }
 
-          // Clear existing story dialog when story changes
+          // Clear existing story dialog and selected vote when story changes
           if (data.type === 'story_changed') {
             setExistingStory(null);
+            setSelectedVote(null);
+          }
+
+          // Clear selected vote when new story is added
+          if (data.type === 'story_added') {
+            setSelectedVote(null);
           }
         };
 
