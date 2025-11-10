@@ -28,12 +28,12 @@ const ParticipantCard: React.FC<ParticipantCardProps> = ({
     .slice(0, 2);
 
   const avatarColors = [
-    'from-purple-500 to-indigo-600',
-    'from-indigo-500 to-blue-600',
-    'from-blue-500 to-cyan-600',
-    'from-emerald-500 to-green-600',
-    'from-amber-500 to-orange-600',
-    'from-pink-500 to-rose-600',
+    'from-purple-600 to-indigo-700',
+    'from-indigo-600 to-blue-700',
+    'from-blue-600 to-cyan-700',
+    'from-emerald-600 to-green-700',
+    'from-amber-600 to-orange-700',
+    'from-pink-600 to-rose-700',
   ];
 
   const colorIndex = index % avatarColors.length;
@@ -47,19 +47,20 @@ const ParticipantCard: React.FC<ParticipantCardProps> = ({
       data-testid={`participant-${username}`}
       className={cn(
         "relative p-3 rounded-xl backdrop-blur-sm transition-all duration-300",
-        "from-white via-purple-50/40 to-white dark:bg-gray-800/60 border",
+        "bg-gradient-to-br from-white via-purple-50/40 to-white border",
         connected 
-          ? "border-purple-200/60 dark:border-gray-700" 
-          : "border-red-200 dark:border-red-900 opacity-60"
+          ? "border-purple-200/60" 
+          : "border-red-200 opacity-60"
       )}
     >
       <div className="flex items-center gap-3">
         {/* Avatar */}
         <div className="relative">
           <div className={cn(
-            "w-12 h-12 rounded-full flex items-center justify-center text-white font-bold",
-            ` ${avatarGradient}`,
-            "shadow-lg"
+            "w-12 h-12 rounded-full flex items-center justify-center font-bold",
+            "bg-white border-4 border-purple-500",
+            "bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent",
+            "shadow-2xl shadow-purple-400/80 ring-4 ring-purple-300/50 ring-offset-2 ring-offset-white"
           )}>
             {initials}
           </div>
@@ -68,7 +69,7 @@ const ParticipantCard: React.FC<ParticipantCardProps> = ({
           <div className={cn(
             "absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center",
             connected ? "bg-emerald-500" : "bg-red-500",
-            "border-2 border-white dark:border-gray-800"
+            "border-2 border-white"
           )}>
             {connected ? (
               <Wifi className="w-3 h-3 text-white" />
@@ -80,24 +81,24 @@ const ParticipantCard: React.FC<ParticipantCardProps> = ({
 
         {/* User Info */}
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-white dark:text-gray-100 truncate">
+          <p className="font-medium text-purple-800 truncate">
             {username}
           </p>
           <div className="flex items-center gap-1 mt-0.5">
             {!hasVoted && connected && (
-              <span className="text-xs text-white dark:text-gray-400 flex items-center gap-1">
+              <span className="text-xs text-purple-700 flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 Thinking...
               </span>
             )}
             {hasVoted && !isRevealed && (
-              <span className="text-xs text-white dark:text-emerald-400 flex items-center gap-1">
+              <span className="text-xs text-green-700 flex items-center gap-1">
                 <Check className="w-3 h-3" />
                 Voted
               </span>
             )}
             {!connected && (
-              <span className="text-xs text-white dark:text-red-400">
+              <span className="text-xs text-red-700">
                 Disconnected
               </span>
             )}
@@ -122,7 +123,7 @@ const ParticipantCard: React.FC<ParticipantCardProps> = ({
                   {voteValue === 'coffee' ? '☕' : voteValue}
                 </div>
               ) : (
-                <div className="bg-gradient-to-br from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700 text-white w-full h-full rounded-lg flex items-center justify-center">
+                <div className="bg-gradient-to-br from-gray-300 to-gray-400 text-white w-full h-full rounded-lg flex items-center justify-center">
                   <Check className="w-6 h-6" />
                 </div>
               )}

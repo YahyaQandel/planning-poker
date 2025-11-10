@@ -303,8 +303,8 @@ function RoomModern() {
           {/* Stories Sidebar */}
           <div className="lg:col-span-3 space-y-4">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Layers className="w-5 h-5 text-purple-500" />
+              <h2 className="text-lg font-semibold flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                <Layers className="w-5 h-5 text-purple-600" />
                 Stories
               </h2>
               <Button
@@ -332,7 +332,7 @@ function RoomModern() {
               ))}
               
               {room.stories.length === 0 && (
-                <div className="text-center py-8 text-white dark:text-gray-400">
+                <div className="text-center py-8 text-purple-700">
                   No stories yet. Add your first story to begin!
                 </div>
               )}
@@ -347,16 +347,16 @@ function RoomModern() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-6 rounded-2xl from-white via-purple-50/50 to-purple-100/50 dark:bg-gray-800/80 backdrop-blur-sm border-2 border-purple-200 dark:border-purple-800 shadow-xl"
+                className="p-6 rounded-2xl bg-gradient-to-br from-white via-purple-50/50 to-purple-100/50 backdrop-blur-sm border-2 border-purple-200 shadow-xl"
               >
                 <div className="text-center space-y-2">
                   <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
                     Currently Estimating
                   </h3>
-                  <p className="text-xl font-semibold text-white dark:text-gray-200">
+                  <p className="text-xl font-semibold text-purple-800">
                     {room.current_story_data.story_id}: {room.current_story_data.title}
                   </p>
-                  <p className="text-sm text-white dark:text-gray-400">
+                  <p className="text-sm text-purple-700">
                     {room.current_story_data.votes_count} of {room.participants.filter(p => p.connected).length} voted
                   </p>
                 </div>
@@ -406,8 +406,8 @@ function RoomModern() {
 
           {/* Participants */}
           <div className="lg:col-span-3 space-y-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Users className="w-5 h-5 text-indigo-500" />
+            <h2 className="text-lg font-semibold flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+              <Users className="w-5 h-5 text-purple-600" />
               Participants ({room.participants.filter(p => p.connected).length})
             </h2>
             

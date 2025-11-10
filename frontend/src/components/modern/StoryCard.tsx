@@ -30,9 +30,9 @@ const StoryCard: React.FC<StoryCardProps> = ({
   };
 
   const getCardBackground = () => {
-    if (isCurrentStory) return 'from-purple-500/20 to-indigo-500/20 border-purple-500/50';
-    if (isEstimated) return 'from-emerald-500/10 to-green-500/10 border-emerald-500/30';
-    return 'from-white via-purple-50/30 to-white dark:bg-gray-800/50 border-purple-200/60 dark:border-gray-700';
+    if (isCurrentStory) return 'bg-gradient-to-br from-purple-500/20 to-indigo-500/20 border-purple-500/50';
+    if (isEstimated) return 'bg-gradient-to-br from-emerald-500/10 to-green-500/10 border-emerald-500/30';
+    return 'bg-gradient-to-br from-white via-purple-50/30 to-white border-purple-200/60';
   };
 
   return (
@@ -63,21 +63,21 @@ const StoryCard: React.FC<StoryCardProps> = ({
         <div className="flex-1 space-y-1">
           <div className="flex items-center gap-2">
             {getStatusIcon()}
-            <span className="text-sm font-medium text-white dark:text-gray-400 flex items-center gap-1">
+            <span className="text-sm font-medium text-purple-700 flex items-center gap-1">
               <Hash className="w-3 h-3" />
               {storyId}
             </span>
           </div>
           <h3 className={cn(
             "font-semibold line-clamp-2",
-            isCurrentStory && "text-white dark:text-purple-300",
-            isEstimated && "text-white dark:text-emerald-300",
-            isPending && "text-white dark:text-gray-300"
+            isCurrentStory && "text-purple-800",
+            isEstimated && "text-green-800",
+            isPending && "text-purple-700"
           )}>
             {title}
           </h3>
           {votesCount > 0 && !isEstimated && (
-            <p className="text-xs text-white dark:text-gray-400">
+            <p className="text-xs text-purple-600">
               {votesCount} vote{votesCount !== 1 ? 's' : ''} cast
             </p>
           )}

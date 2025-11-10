@@ -49,10 +49,9 @@ const VoteCard: React.FC<VoteCardProps> = ({
         "flex items-center justify-center",
         disabled && "opacity-50 cursor-not-allowed",
         !disabled && !isSelected && [
-          "from-white via-purple-50/50 to-white dark:bg-gray-800/80 text-gray-700 dark:text-gray-300",
-          "border-2 border-purple-200/60 dark:border-gray-700",
+          "bg-gradient-to-br from-white via-purple-50/50 to-white text-gray-700",
+          "border-2 border-purple-200/60",
           "hover:bg-gradient-to-br hover:from-purple-50 hover:via-purple-100/50 hover:to-purple-50",
-          "dark:hover:from-gray-800 dark:hover:to-gray-900"
         ],
         isSelected && [
           `bg-gradient-to-br ${getCardGradient()} text-white`,
@@ -80,7 +79,7 @@ const VoteCard: React.FC<VoteCardProps> = ({
       {!isSpecial && (
         <div className={cn(
           "absolute top-2 right-2 text-xs font-medium",
-          isSelected ? "text-white/80" : "text-gray-500 dark:text-gray-400"
+          isSelected ? "text-white/80" : "text-gray-500"
         )}>
           pts
         </div>

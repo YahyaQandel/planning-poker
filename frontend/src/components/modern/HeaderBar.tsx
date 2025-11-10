@@ -4,15 +4,12 @@ import {
   Calendar, 
   Copy, 
   Hash, 
-  Moon, 
-  Sun, 
   TrendingUp, 
   Users,
   Activity,
   Target
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useTheme } from '../ThemeProvider';
 
 interface HeaderBarProps {
   sessionName: string;
@@ -33,12 +30,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
   participantsCount,
   onCopyCode,
 }) => {
-  const { theme, setTheme } = useTheme();
   const progress = totalStories > 0 ? (estimatedStories / totalStories) * 100 : 0;
-
-  const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
-  };
 
   return (
     <motion.header
@@ -88,18 +80,6 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
             </div>
           </div>
 
-          {/* Theme Toggle */}
-          <button
-            onClick={toggleTheme}
-            className="absolute top-4 right-4 lg:static p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
-            data-testid="theme-toggle"
-          >
-            {theme === 'dark' ? (
-              <Sun className="w-5 h-5 text-white" />
-            ) : (
-              <Moon className="w-5 h-5 text-white" />
-            )}
-          </button>
         </div>
 
         {/* Stats Cards */}
