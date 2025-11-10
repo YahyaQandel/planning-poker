@@ -250,6 +250,15 @@ export default function Room() {
     setExistingStory(null);
   };
 
+  const handleStoryClick = (storyId: string) => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+    ws.send(JSON.stringify({
+      type: 'change_story',
+      story_id: storyId
+    }));
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -289,6 +298,10 @@ export default function Room() {
                 <Copy className="w-4 h-4" />
               </Button>
             </div>
+            <div className="mt-1">
+              <span className="text-muted-foreground">User:</span>
+              <span className="font-semibold ml-1">{username}</span>
+            </div>
           </div>
           <div className="flex gap-2">
             <Button
@@ -301,7 +314,7 @@ export default function Room() {
             </Button>
             <Button
               onClick={handleReveal}
-              disabled={!currentStory || votes.length === 0 || revealed}
+              disabled={!currentStory || votes.length === 0 || revealed || !allVoted}
             >
               <Eye className="w-4 h-4 mr-2" />
               Reveal
@@ -377,7 +390,11 @@ export default function Room() {
         <div className="grid grid-cols-12 gap-6">
           {/* Left Sidebar - Stories */}
           <div className="col-span-3">
-            <StorySidebar stories={room.stories} />
+            <StorySidebar 
+              stories={room.stories} 
+              currentStoryId={room.current_story}
+              onStoryClick={handleStoryClick}
+            />
           </div>
 
           {/* Main Content */}

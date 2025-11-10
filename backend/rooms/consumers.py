@@ -352,10 +352,14 @@ class RoomConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def change_current_story(self, story_id):
-        from .models import Room, Story
+        from .models import Room, Story, Vote
 
         room = Room.objects.get(code=self.room_code)
         story = Story.objects.get(id=story_id)
+
+        # Clear votes for previous story if different
+        if room.current_story and room.current_story.id != story.id:
+            Vote.objects.filter(room=room, story=room.current_story).delete()
 
         room.current_story = story
         room.save()
