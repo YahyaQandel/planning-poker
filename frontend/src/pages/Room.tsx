@@ -28,6 +28,7 @@ export default function Room() {
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [calculationResult, setCalculationResult] = useState<{average: number, rounded: number} | null>(null);
+  const [existingStory, setExistingStory] = useState<any>(null);
 
   useEffect(() => {
     if (!username) {
@@ -93,11 +94,21 @@ export default function Room() {
             setCalculationResult(null);
           }
 
+          // Handle existing story detection
+          if (data.type === 'story_exists') {
+            setExistingStory(data.story);
+          }
+
           // Reset selected vote when room is reset
           if (data.type === 'room_reset') {
             setSelectedVote(null);
             setShowConfirmDialog(false);
             setCalculationResult(null);
+          }
+
+          // Clear existing story dialog when story changes
+          if (data.type === 'story_changed') {
+            setExistingStory(null);
           }
         };
 
@@ -197,6 +208,21 @@ export default function Room() {
     setCalculationResult(null);
   };
 
+  const handleSwitchToExistingStory = () => {
+    if (!ws || ws.readyState !== WebSocket.OPEN || !existingStory) return;
+
+    ws.send(JSON.stringify({
+      type: 'switch_to_existing_story',
+      story_id: existingStory.id
+    }));
+
+    setExistingStory(null);
+  };
+
+  const handleCancelExistingStory = () => {
+    setExistingStory(null);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -282,6 +308,40 @@ export default function Room() {
                 <Button variant="outline" onClick={() => setShowAddStory(false)}>
                   Cancel
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Existing Story Confirmation */}
+        {existingStory && (
+          <Card className="border-orange-500 bg-orange-50">
+            <CardContent className="p-4">
+              <div className="space-y-3">
+                <div>
+                  <div className="font-semibold text-lg">Story Already Exists</div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    Story ID "{existingStory.story_id}" already exists
+                    {existingStory.final_points && (
+                      <span className="font-medium"> with {existingStory.final_points} points</span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={handleCancelExistingStory}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSwitchToExistingStory}
+                    className="flex-1"
+                  >
+                    Switch to This Story
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

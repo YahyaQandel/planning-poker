@@ -42,6 +42,8 @@ class RoomConsumer(AsyncWebsocketConsumer):
             await self.handle_add_story(data)
         elif message_type == 'change_story':
             await self.handle_change_story(data)
+        elif message_type == 'switch_to_existing_story':
+            await self.handle_switch_to_existing_story(data)
         elif message_type == 'user_joined':
             await self.handle_user_joined(data)
         elif message_type == 'user_left':
@@ -112,23 +114,46 @@ class RoomConsumer(AsyncWebsocketConsumer):
         story_id = data.get('story_id', '')
         title = data.get('title', '')
 
-        story = await self.add_story(story_id, title)
+        result = await self.add_story(story_id, title)
         room_data = await self.get_room_data()
 
-        # Broadcast new story to room
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                'type': 'story_added',
-                'story': story,
+        # If story already exists, ask for confirmation
+        if result.get('exists'):
+            await self.send(text_data=json.dumps({
+                'type': 'story_exists',
+                'story': result['story'],
                 'room': room_data
-            }
-        )
+            }))
+        else:
+            # Broadcast new story to room
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'story_added',
+                    'story': result['story'],
+                    'room': room_data
+                }
+            )
 
     async def handle_change_story(self, data):
         story_id = data.get('story_id')
 
         await self.change_current_story(story_id)
+        room_data = await self.get_room_data()
+
+        # Broadcast story change to room
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'story_changed',
+                'room': room_data
+            }
+        )
+
+    async def handle_switch_to_existing_story(self, data):
+        story_id = data.get('story_id')
+
+        await self.switch_to_existing_story(story_id)
         room_data = await self.get_room_data()
 
         # Broadcast story change to room
@@ -287,9 +312,21 @@ class RoomConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def add_story(self, story_id, title):
-        from .models import Room, Story
+        from .models import Room, Story, Vote
 
         room = Room.objects.get(code=self.room_code)
+
+        # Check if story with same story_id already exists (if story_id is provided)
+        if story_id:
+            existing_story = Story.objects.filter(room=room, story_id=story_id).first()
+            if existing_story:
+                # Return existing story info with a flag
+                from .serializers import StorySerializer
+                return {
+                    'story': StorySerializer(existing_story).data,
+                    'exists': True
+                }
+
         max_order = Story.objects.filter(room=room).count()
 
         story = Story.objects.create(
@@ -299,13 +336,19 @@ class RoomConsumer(AsyncWebsocketConsumer):
             order=max_order
         )
 
-        # Set as current story if no current story
-        if not room.current_story:
-            room.current_story = story
-            room.save()
+        # Always set as current story and clear votes for previous story
+        if room.current_story:
+            # Clear votes for previous story
+            Vote.objects.filter(room=room, story=room.current_story).delete()
+
+        room.current_story = story
+        room.save()
 
         from .serializers import StorySerializer
-        return StorySerializer(story).data
+        return {
+            'story': StorySerializer(story).data,
+            'exists': False
+        }
 
     @database_sync_to_async
     def change_current_story(self, story_id):
@@ -313,6 +356,20 @@ class RoomConsumer(AsyncWebsocketConsumer):
 
         room = Room.objects.get(code=self.room_code)
         story = Story.objects.get(id=story_id)
+
+        room.current_story = story
+        room.save()
+
+    @database_sync_to_async
+    def switch_to_existing_story(self, story_id):
+        from .models import Room, Story, Vote
+
+        room = Room.objects.get(code=self.room_code)
+        story = Story.objects.get(id=story_id)
+
+        # Clear votes for previous story if different
+        if room.current_story and room.current_story.id != story.id:
+            Vote.objects.filter(room=room, story=room.current_story).delete()
 
         room.current_story = story
         room.save()
