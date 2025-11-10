@@ -1,8 +1,8 @@
-# 🎯 Planning Poker Application
+# Planning Poker Application
 
 A real-time collaborative story point estimation tool for agile development teams, built with Django + React.
 
-## 🌟 Features
+## Features
 
 - **Real-time Collaboration**: WebSocket-powered live updates across all participants
 - **Story Point Estimation**: Fibonacci sequence voting with average calculation
@@ -13,7 +13,7 @@ A real-time collaborative story point estimation tool for agile development team
 - **Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
 - **Automation Ready**: Complete data-testid attributes for automated testing
 
-## 🏗️ Technology Stack
+## Technology Stack
 
 - **Backend**: Django 5.0.1 + Django Channels 4.0.0 (WebSockets)
 - **Frontend**: React 19.2.0 + TypeScript + Vite 7.2.2
@@ -21,7 +21,7 @@ A real-time collaborative story point estimation tool for agile development team
 - **Database**: SQLite (development)
 - **Real-time**: WebSocket connections with Redis channel layer
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Python 3.11+
@@ -57,29 +57,11 @@ A real-time collaborative story point estimation tool for agile development team
    - Frontend: `http://localhost:5173`
    - Backend API: `http://localhost:8000`
 
-## 📱 Application Walkthrough
+## Application Walkthrough
 
 ### 1. Home Page - Creating & Joining Rooms
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     🏢 Planning Poker                      │
-│              Estimate story points with your team           │
-│                                                             │
-│  ┌─────────────────────┐  ┌─────────────────────────────┐   │
-│  │     Create Room     │  │       Join Room             │   │
-│  │                     │  │                             │   │
-│  │ Your Name: [_____]  │  │ Your Name: [_____]          │   │
-│  │ Story ID:  [_____]  │  │ Room Code: [_____]          │   │
-│  │ Title:     [_____]  │  │                             │   │
-│  │                     │  │                             │   │
-│  │ 💡 Tip: Leave empty │  │                             │   │
-│  │ for funny stories!  │  │                             │   │
-│  │                     │  │                             │   │
-│  │   [Create Room]     │  │      [Join Room]            │   │
-│  └─────────────────────┘  └─────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-```
+![Home page](images/home-page.png)
 
 **Key Features:**
 - **Create Room**: Start a new estimation session
@@ -89,35 +71,14 @@ A real-time collaborative story point estimation tool for agile development team
 
 ### 2. Main Room Interface
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ 🏢 Planning Session For November 10, 2025                                   │
-│ Room: ABC123 [📋] User: John                    [Reset] [Reveal] [Add Story] │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│ ┌─Stories (3)──────┐ ┌─Current Story──────────┐ ┌─Participants (5)─────────┐ │
-│ │                  │ │                        │ │                          │ │
-│ │🟢 WOW-316: 7 pts │ │ Currently Estimating   │ │ 👤 John         [✓] 8    │ │
-│ │🔵⚪ TEST-123      │ │ TEST-123               │ │ 👤 Mary         [✓] 5    │ │
-│ │⚪ TASK-001       │ │ User Authentication     │ │ 👤 Bob          Waiting  │ │
-│ │                  │ │                        │ │ 👤 Alice        [✓] 13   │ │
-│ │ Total: 7 points  │ │ 3/4 voted             │ │ 👤 Charlie      [✓] 8    │ │
-│ └─────────────────┘ └───────────────────────┘ └─────────────────────────┘ │
-│                                                                             │
-│                           Cast Your Vote                                    │
-│                                                                             │
-│    [1] [2] [3] [5] [8] [13] [21] [?] [☕]                                  │
-│                    ↑ Selected                                              │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+![Room page](images/room-page.png)
 
 **UI Components:**
 
 #### **Stories Sidebar (Left)**
-- **🟢 Green**: Estimated stories with final points
-- **🔵 Blue Ring**: Currently active story
-- **⚪ Gray**: Unestimated stories
+- **Green**: Estimated stories with final points
+- **Blue Ring**: Currently active story
+- **Gray**: Unestimated stories
 - **Running Total**: Sum of all estimated story points
 
 #### **Current Story (Center)**
@@ -143,23 +104,23 @@ Cast Your Vote
 [1] [2] [3] [5] [8] [13] [21] [?] [☕]
 
 Participants (4):
-👤 John         Waiting
-👤 Mary         Waiting  
-👤 Bob          Waiting
-👤 Alice        Waiting
+John         Waiting
+Mary         Waiting  
+Bob          Waiting
+Alice        Waiting
 ```
 
 #### **State 2: Partial Voting**
 ```
 Cast Your Vote
-[1] [2] [3] [🔵5] [8] [13] [21] [?] [☕]
+[1] [2] [3] [5] [8] [13] [21] [?] [coffee]
             ↑ Your vote
 
 Participants (4):              Vote Status: 3/4 voted
-👤 John         [✓] Hidden
-👤 Mary         [✓] Hidden  
-👤 Bob          Waiting
-👤 Alice        [✓] Hidden
+John         [checkmark] Hidden
+Mary         [checkmark] Hidden  
+Bob          Waiting
+Alice        [checkmark] Hidden
 ```
 
 #### **State 3: Everyone Voted**
@@ -167,11 +128,11 @@ Participants (4):              Vote Status: 3/4 voted
 Cast Your Vote (Disabled)
 [1] [2] [3] [5] [8] [13] [21] [?] [☕]
 
-Participants (4):              ✅ Everyone has voted!
-👤 John         [✓] Hidden     [Reveal] button enabled
-👤 Mary         [✓] Hidden  
-👤 Bob          [✓] Hidden
-👤 Alice        [✓] Hidden
+Participants (4):              Everyone has voted!
+John         [checkmark] Hidden     [Reveal] button enabled
+Mary         [checkmark] Hidden  
+Bob          [checkmark] Hidden
+Alice        [checkmark] Hidden
 ```
 
 #### **State 4: Votes Revealed**
@@ -180,10 +141,10 @@ Cast Your Vote (Disabled)
 [1] [2] [3] [5] [8] [13] [21] [?] [☕]
 
 Participants (4):              
-👤 John         [8] 
-👤 Mary         [5]   
-👤 Bob          [3]
-👤 Alice        [13]
+John         [8] 
+Mary         [5]   
+Bob          [3]
+Alice        [13]
 
 ┌─────────────────────────────────────┐
 │        Average Calculation          │
@@ -198,17 +159,7 @@ Participants (4):
 
 #### **Adding New Stories**
 
-```
-┌─────────────────────────────────────────────┐
-│              Add New Story                  │
-│                                             │
-│ Story ID:  [JIRA-123        ] [Add]         │
-│ Title:     [User Login Page ] [Cancel]      │
-│                                             │
-│ 💡 Leave empty for randomly generated       │
-│    funny story!                             │
-└─────────────────────────────────────────────┘
-```
+![Add new story](images/add-new-story.png)
 
 **Auto-Generated Examples:**
 - `EPIC-542: The Mystical Unicorn Debugs Life`
@@ -225,10 +176,10 @@ Participants (4):
 ```
 Stories Panel:
 
-🟢 STORY-001: Login System (8 pts)     ← Estimated (Green)
-🔵⚪ STORY-002: User Dashboard           ← Current + Unestimated (Blue ring + Gray)
-🔵🟢 STORY-003: Payment Flow (13 pts)   ← Current + Estimated (Blue ring + Green)
-⚪ STORY-004: Admin Panel               ← Unestimated (Gray)
+STORY-001: Login System (8 pts)     <- Estimated (Green)
+STORY-002: User Dashboard           <- Current + Unestimated (Blue ring + Gray)
+STORY-003: Payment Flow (13 pts)   <- Current + Estimated (Blue ring + Green)
+STORY-004: Admin Panel               <- Unestimated (Gray)
 
 Total: 21 points (2 estimated)
 ```
@@ -238,7 +189,7 @@ Total: 21 points (2 estimated)
 #### **Reset Confirmation Dialog**
 ```
 ┌─────────────────────────────────────┐
-│          ⚠️ Reset All Votes?        │
+│          Reset All Votes?           │
 │                                     │
 │ This will clear all votes for the   │
 │ current story. Everyone will need   │
@@ -271,7 +222,7 @@ Total: 21 points (2 estimated)
 - Compact voting cards in grid
 - Touch-optimized buttons and interactions
 
-## 🎮 User Scenarios
+## User Scenarios
 
 ### **Scenario 1: Team Estimation Session**
 
@@ -288,11 +239,11 @@ Total: 21 points (2 estimated)
 
 ```
 Session Progress:
-✅ Login System (8 pts)      - Completed
-✅ User Dashboard (13 pts)   - Completed  
-🎯 Payment Flow             - Currently voting
-⏳ Admin Panel              - Pending
-⏳ Reports Module           - Pending
+Login System (8 pts)      - Completed
+User Dashboard (13 pts)   - Completed  
+Payment Flow             - Currently voting
+Admin Panel              - Pending
+Reports Module           - Pending
 
 Total Estimated: 21 points
 ```
@@ -310,7 +261,7 @@ Team Discussion:
 Decision: Reset and re-vote after discussion
 ```
 
-## 🔧 Technical Features
+## Technical Features
 
 ### **Real-time WebSocket Updates**
 - Vote casting appears instantly for all users
@@ -338,7 +289,7 @@ Complete `data-testid` attributes for testing:
 <span data-testid="participant-vote-user123">8</span>
 ```
 
-## 📊 API Reference
+## API Reference
 
 ### **REST Endpoints**
 
@@ -394,7 +345,7 @@ ws.send(JSON.stringify({
 }));
 ```
 
-## 🎨 Design System
+## Design System
 
 ### **Color Scheme**
 - **Primary**: Blue (#3b82f6) - Current story indicators
@@ -414,7 +365,7 @@ ws.send(JSON.stringify({
 - **Disabled**: Opacity reduction and cursor changes
 - **Loading**: Skeleton states and spinners
 
-## 🚀 Deployment
+## Deployment
 
 ### **Recommended Subdomain**
 - **Suggested**: `poker.software-development.it`
@@ -435,7 +386,7 @@ REDIS_URL=redis://...
 SECRET_KEY=your-secret-key
 ```
 
-## 🤝 Contributing
+## Contributing
 
 1. **Fork** the repository
 2. **Create** a feature branch
@@ -443,11 +394,11 @@ SECRET_KEY=your-secret-key
 4. **Follow** code style guidelines
 5. **Submit** pull request with clear description
 
-## 📜 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **shadcn/ui** for beautiful React components
 - **Django Channels** for WebSocket support
@@ -456,4 +407,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Built with ❤️ for agile development teams**
+**Built with love for agile development teams**

@@ -295,6 +295,7 @@ function RoomModern() {
           estimatedStories={estimatedStories}
           totalStories={room.stories.length}
           participantsCount={room.participants.filter(p => p.connected).length}
+          currentUsername={currentUsername || 'Anonymous'}
           onCopyCode={handleCopyCode}
         />
 

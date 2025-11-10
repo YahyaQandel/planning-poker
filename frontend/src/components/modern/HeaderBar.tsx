@@ -6,6 +6,7 @@ import {
   Hash, 
   TrendingUp, 
   Users,
+  User,
   Activity,
   Target
 } from 'lucide-react';
@@ -18,6 +19,7 @@ interface HeaderBarProps {
   estimatedStories: number;
   totalStories: number;
   participantsCount: number;
+  currentUsername: string;
   onCopyCode: () => void;
 }
 
@@ -28,6 +30,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
   estimatedStories,
   totalStories,
   participantsCount,
+  currentUsername,
   onCopyCode,
 }) => {
   const progress = totalStories > 0 ? (estimatedStories / totalStories) * 100 : 0;
@@ -76,6 +79,10 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
                   <Users className="w-4 h-4" />
                   <span className="text-sm">{participantsCount} participants</span>
                 </div>
+                <div className="flex items-center gap-1">
+                  <User className="w-4 h-4" />
+                  <span className="text-sm font-medium">{currentUsername}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -107,7 +114,6 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
               {estimatedStories}/{totalStories}
             </p>
           </motion.div>
-
 
           <motion.div
             whileHover={{ scale: 1.05 }}
