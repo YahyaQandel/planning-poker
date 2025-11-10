@@ -369,10 +369,8 @@ class RoomConsumer(AsyncWebsocketConsumer):
         room = Room.objects.get(code=self.room_code)
         story = Story.objects.get(id=story_id)
 
-        # Clear votes for previous story if different
-        if room.current_story and room.current_story.id != story.id:
-            Vote.objects.filter(room=room, story=room.current_story).delete()
-
+        # Don't delete votes when switching stories - preserve them!
+        # Only switch the current story pointer
         room.current_story = story
         room.save()
 
@@ -383,10 +381,8 @@ class RoomConsumer(AsyncWebsocketConsumer):
         room = Room.objects.get(code=self.room_code)
         story = Story.objects.get(id=story_id)
 
-        # Clear votes for previous story if different
-        if room.current_story and room.current_story.id != story.id:
-            Vote.objects.filter(room=room, story=room.current_story).delete()
-
+        # Don't delete votes when switching stories - preserve them!
+        # Only switch the current story pointer
         room.current_story = story
         room.save()
 

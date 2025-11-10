@@ -29,6 +29,7 @@ export default function Room() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [calculationResult, setCalculationResult] = useState<{average: number, rounded: number} | null>(null);
   const [existingStory, setExistingStory] = useState<any>(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   useEffect(() => {
     if (!username) {
@@ -125,6 +126,7 @@ export default function Room() {
             setSelectedVote(null);
             setShowConfirmDialog(false);
             setCalculationResult(null);
+            setShowResetConfirm(false);
           }
 
           // Clear existing story dialog and selected vote when story changes
@@ -187,13 +189,22 @@ export default function Room() {
   };
 
   const handleReset = () => {
+    setShowResetConfirm(true);
+  };
+
+  const handleConfirmReset = () => {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
     setSelectedVote(null);
+    setShowResetConfirm(false);
 
     ws.send(JSON.stringify({
       type: 'reset',
     }));
+  };
+
+  const handleCancelReset = () => {
+    setShowResetConfirm(false);
   };
 
   const handleAddStory = () => {
@@ -412,6 +423,40 @@ export default function Room() {
                     data-testid="switch-to-existing-story-button"
                   >
                     Switch to This Story
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Reset Confirmation Dialog */}
+        {showResetConfirm && (
+          <Card className="border-red-500 bg-red-50" data-testid="reset-confirm-dialog">
+            <CardContent className="p-4">
+              <div className="space-y-3">
+                <div>
+                  <div className="font-semibold text-lg text-red-700" data-testid="reset-confirm-title">Reset All Votes?</div>
+                  <div className="text-sm text-red-600 mt-1">
+                    This will clear all votes for the current story. Everyone will need to vote again.
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={handleCancelReset}
+                    className="flex-1"
+                    data-testid="cancel-reset-button"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleConfirmReset}
+                    className="flex-1"
+                    data-testid="confirm-reset-button"
+                  >
+                    Reset All Votes
                   </Button>
                 </div>
               </div>
