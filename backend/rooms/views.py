@@ -128,12 +128,17 @@ class RoomViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def reset(self, request, code=None):
-        """Reset room - clear all votes for current story"""
+        """Reset room - clear all votes and estimation for current story"""
         room = get_object_or_404(Room, code=code)
 
         if room.current_story:
             # Delete all votes for current story
             Vote.objects.filter(room=room, story=room.current_story).delete()
+            
+            # Reset story estimation - clear final points and timestamp
+            room.current_story.final_points = None
+            room.current_story.estimated_at = None
+            room.current_story.save()
 
         return Response({'message': 'Room reset successfully'})
 

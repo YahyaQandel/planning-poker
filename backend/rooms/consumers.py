@@ -297,7 +297,13 @@ class RoomConsumer(AsyncWebsocketConsumer):
         room = Room.objects.get(code=self.room_code)
 
         if room.current_story:
+            # Delete all votes for current story
             Vote.objects.filter(room=room, story=room.current_story).delete()
+            
+            # Reset story estimation - clear final points and timestamp
+            room.current_story.final_points = None
+            room.current_story.estimated_at = None
+            room.current_story.save()
 
     @database_sync_to_async
     def confirm_story_points(self, points):
