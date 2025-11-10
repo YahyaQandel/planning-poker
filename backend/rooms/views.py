@@ -154,10 +154,10 @@ class RoomViewSet(viewsets.ModelViewSet):
             # Calculate average (excluding ? and coffee)
             numeric_votes = votes.exclude(value__in=['?', 'coffee']).values_list('value', flat=True)
             if numeric_votes:
-                # Convert to integers and calculate average
+                # Convert to integers and calculate estimate using Planning Poker best practices
                 vote_values = [int(v) for v in numeric_votes]
                 average = sum(vote_values) / len(vote_values)
-                rounded = round(average)
+                rounded = self.calculate_planning_poker_estimate(numeric_votes)
 
                 # Store both average and rounded value (we'll use rounded as placeholder)
                 room.current_story.final_points = str(rounded)
@@ -178,3 +178,48 @@ class RoomViewSet(viewsets.ModelViewSet):
             room.current_story.save()
 
         return Response(RoomSerializer(room).data)
+
+    def calculate_planning_poker_estimate(self, votes):
+        """Calculate estimate using Planning Poker best practices"""
+        fibonacci_sequence = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89]
+        
+        if not votes:
+            return None
+            
+        # Convert votes to integers and sort
+        vote_values = sorted([int(v) for v in votes])
+        min_vote = vote_values[0]
+        max_vote = vote_values[-1]
+        
+        # Find positions in Fibonacci sequence
+        min_pos = next((i for i, fib in enumerate(fibonacci_sequence) if fib >= min_vote), 0)
+        max_pos = next((i for i, fib in enumerate(fibonacci_sequence) if fib >= max_vote), len(fibonacci_sequence) - 1)
+        
+        # Check for wide spread (more than 2 Fibonacci steps apart)
+        spread = max_pos - min_pos
+        
+        if spread > 2:
+            # Wide spread - suggest towards higher estimate with median approach
+            # This encourages discussion and tends toward the complexity some see
+            if len(vote_values) == 1:
+                return vote_values[0]
+            
+            # Use 75th percentile approach for wide spreads
+            import statistics
+            percentile_75 = statistics.quantiles(vote_values, n=4)[2]  # 75th percentile
+            
+            # Round up to nearest Fibonacci
+            for fib in fibonacci_sequence:
+                if percentile_75 <= fib:
+                    return fib
+            return fibonacci_sequence[-1]
+        else:
+            # Normal spread - use median or standard approach
+            import statistics
+            median = statistics.median(vote_values)
+            
+            # Round to nearest Fibonacci (up)
+            for fib in fibonacci_sequence:
+                if median <= fib:
+                    return fib
+            return fibonacci_sequence[-1]

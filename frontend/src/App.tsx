@@ -1,15 +1,20 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Home from './pages/Home';
-import Room from './pages/Room';
+import { Toaster } from '@/components/ui/sonner';
+import { ThemeProvider } from './components/ThemeProvider';
+import HomeModern from './pages/HomeModern';
+import RoomModern from './pages/RoomModern';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/room/:code" element={<Room />} />
-      </Routes>
-    </BrowserRouter>
+    <ThemeProvider defaultTheme="system" storageKey="planning-poker-theme">
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<HomeModern />} />
+          <Route path="/room/:code" element={<RoomModern />} />
+        </Routes>
+      </BrowserRouter>
+      <Toaster />
+    </ThemeProvider>
   );
 }
 

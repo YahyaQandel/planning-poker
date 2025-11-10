@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <style type="text/css"><![CDATA[
+      .glyph { fill: #FFFFFF; font-family: "DejaVu Sans Mono", Menlo, Consolas, "Liberation Mono", monospace; }
+    ]]></style>
+  </defs>
+  <!-- Transparent background by default -->
+  <g>
+    <!-- Left curly brace -->
+    <text x="120" y="300" font-size="320" class="glyph" text-anchor="middle" dominant-baseline="middle">{</text>
+    <!-- Numbers -->
+    <text x="256" y="300" font-size="220" class="glyph" text-anchor="middle" dominant-baseline="middle">112</text>
+    <!-- Right curly brace -->
+    <text x="392" y="300" font-size="320" class="glyph" text-anchor="middle" dominant-baseline="middle">}</text>
+  </g>
+</svg>
