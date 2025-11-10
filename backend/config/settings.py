@@ -149,3 +149,96 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Logging Configuration
+import os
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {funcName} {lineno} - {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {asctime} - {message}',
+            'style': '{',
+        },
+        'json': {
+            'format': '%(asctime)s %(name)s %(levelname)s %(funcName)s:%(lineno)d - %(message)s',
+            'style': '%',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'planning_poker.log'),
+            'formatter': 'verbose',
+        },
+        'api_file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'api.log'),
+            'formatter': 'json',
+        },
+        'websocket_file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'websocket.log'),
+            'formatter': 'json',
+        },
+        'db_file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'database.log'),
+            'formatter': 'json',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'rooms': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'rooms.api': {
+            'handlers': ['console', 'api_file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'rooms.websocket': {
+            'handlers': ['console', 'websocket_file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'rooms.database': {
+            'handlers': ['console', 'db_file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'daphne': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'channels': {
+            'handlers': ['console', 'websocket_file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
+
+# Create logs directory if it doesn't exist
+LOGS_DIR = os.path.join(BASE_DIR, 'logs')
+os.makedirs(LOGS_DIR, exist_ok=True)
