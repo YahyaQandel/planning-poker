@@ -298,9 +298,9 @@ export default function Room() {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4" data-testid="room-header">
           <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
             <img 
-              src="/teracloud_favico.svg" 
-              alt="Teracloud Logo" 
-              className="w-10 h-10 sm:w-12 sm:h-12 mt-1 flex-shrink-0"
+              src="/favicon.png" 
+              alt="Planning Poker Logo" 
+              className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 mt-1 flex-shrink-0"
               data-testid="room-logo"
             />
             <div className="min-w-0 flex-1">

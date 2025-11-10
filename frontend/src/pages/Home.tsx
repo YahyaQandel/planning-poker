@@ -58,10 +58,10 @@ export default function Home() {
         <div className="text-center space-y-3 md:space-y-4" data-testid="home-header">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4">
             <img 
-              src="/teracloud_favico.svg" 
-              alt="Teracloud Logo" 
+              src="/favicon.png" 
+              alt="Planning Poker Logo" 
               className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16"
-              data-testid="teracloud-logo"
+              data-testid="planning-poker-logo"
             />
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold" data-testid="app-title">Planning Poker</h1>
           </div>
