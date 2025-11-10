@@ -1,6 +1,7 @@
 import uuid
 import secrets
 import string
+from datetime import datetime
 from django.db import models
 from django.utils import timezone
 
@@ -10,8 +11,15 @@ def generate_room_code():
     return ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(6))
 
 
+def generate_session_name():
+    """Generate default session name with today's date"""
+    today = datetime.now().strftime("%B %d, %Y")
+    return f"Planning Session For {today}"
+
+
 class Room(models.Model):
     code = models.CharField(max_length=6, unique=True, default=generate_room_code, db_index=True)
+    session_name = models.CharField(max_length=255, default=generate_session_name)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     current_story = models.ForeignKey('Story', on_delete=models.SET_NULL, null=True, blank=True, related_name='active_in_room')

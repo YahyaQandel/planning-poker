@@ -285,22 +285,29 @@ export default function Room() {
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Planning Poker</h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-muted-foreground">Room:</span>
-              <span className="font-mono font-semibold text-lg">{code}</span>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleCopyRoomCode}
-              >
-                <Copy className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="mt-1">
-              <span className="text-muted-foreground">User:</span>
-              <span className="font-semibold ml-1">{username}</span>
+          <div className="flex items-start gap-4">
+            <img 
+              src="/teracloud_favico.svg" 
+              alt="Teracloud Logo" 
+              className="w-12 h-12 mt-1 flex-shrink-0"
+            />
+            <div>
+              <h1 className="text-3xl font-bold">{room.session_name}</h1>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-muted-foreground">Room:</span>
+                <span className="font-mono font-semibold text-lg">{code}</span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleCopyRoomCode}
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="mt-1">
+                <span className="text-muted-foreground">User:</span>
+                <span className="font-semibold ml-1">{username}</span>
+              </div>
             </div>
           </div>
           <div className="flex gap-2">

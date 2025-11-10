@@ -39,7 +39,7 @@ class RoomSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Room
-        fields = ['code', 'created_at', 'updated_at', 'current_story', 'current_story_data', 'participants', 'stories', 'participants_count']
+        fields = ['code', 'session_name', 'created_at', 'updated_at', 'current_story', 'current_story_data', 'participants', 'stories', 'participants_count']
         read_only_fields = ['code', 'created_at', 'updated_at']
 
     def get_participants_count(self, obj):

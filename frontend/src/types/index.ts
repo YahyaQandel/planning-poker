@@ -1,5 +1,6 @@
 export interface Room {
   code: string;
+  session_name: string;
   created_at: string;
   updated_at: string;
   current_story: string | null;
