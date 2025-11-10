@@ -54,20 +54,20 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl space-y-8">
-        <div className="text-center space-y-4">
-          <div className="flex items-center justify-center gap-4">
+      <div className="w-full max-w-4xl space-y-6 md:space-y-8">
+        <div className="text-center space-y-3 md:space-y-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4">
             <img 
               src="/teracloud_favico.svg" 
               alt="Teracloud Logo" 
-              className="w-16 h-16"
+              className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16"
             />
-            <h1 className="text-4xl font-bold">Planning Poker</h1>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">Planning Poker</h1>
           </div>
-          <p className="text-muted-foreground">Estimate story points with your team in real-time</p>
+          <p className="text-sm sm:text-base text-muted-foreground px-4">Estimate story points with your team in real-time</p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
           {/* Create Room */}
           <Card>
             <CardHeader>

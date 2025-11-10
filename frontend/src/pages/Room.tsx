@@ -281,57 +281,66 @@ export default function Room() {
   );
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-background p-2 sm:p-4">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-start gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
             <img 
               src="/teracloud_favico.svg" 
               alt="Teracloud Logo" 
-              className="w-12 h-12 mt-1 flex-shrink-0"
+              className="w-10 h-10 sm:w-12 sm:h-12 mt-1 flex-shrink-0"
             />
-            <div>
-              <h1 className="text-3xl font-bold">{room.session_name}</h1>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-muted-foreground">Room:</span>
-                <span className="font-mono font-semibold text-lg">{code}</span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={handleCopyRoomCode}
-                >
-                  <Copy className="w-4 h-4" />
-                </Button>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold break-words">{room.session_name}</h1>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mt-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs sm:text-sm text-muted-foreground">Room:</span>
+                  <span className="font-mono font-semibold text-sm sm:text-base lg:text-lg">{code}</span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleCopyRoomCode}
+                    className="h-6 w-6 p-0 sm:h-8 sm:w-8"
+                  >
+                    <Copy className="w-3 h-3 sm:w-4 sm:h-4" />
+                  </Button>
+                </div>
               </div>
               <div className="mt-1">
-                <span className="text-muted-foreground">User:</span>
-                <span className="font-semibold ml-1">{username}</span>
+                <span className="text-xs sm:text-sm text-muted-foreground">User:</span>
+                <span className="font-semibold ml-1 text-sm sm:text-base">{username}</span>
               </div>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               onClick={handleReset}
               disabled={!currentStory}
+              size="sm"
+              className="text-xs sm:text-sm"
             >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Reset
+              <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Reset</span>
             </Button>
             <Button
               onClick={handleReveal}
               disabled={!currentStory || votes.length === 0 || revealed || !allVoted}
+              size="sm"
+              className="text-xs sm:text-sm"
             >
-              <Eye className="w-4 h-4 mr-2" />
+              <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               Reveal
             </Button>
             <Button
               variant="secondary"
               onClick={() => setShowAddStory(!showAddStory)}
+              size="sm"
+              className="text-xs sm:text-sm"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Story
+              <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Add </span>Story
             </Button>
           </div>
         </div>
@@ -394,9 +403,9 @@ export default function Room() {
           </Card>
         )}
 
-        <div className="grid grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
           {/* Left Sidebar - Stories */}
-          <div className="col-span-3">
+          <div className="lg:col-span-3 order-3 lg:order-1">
             <StorySidebar 
               stories={room.stories} 
               currentStoryId={room.current_story}
@@ -405,7 +414,7 @@ export default function Room() {
           </div>
 
           {/* Main Content */}
-          <div className="col-span-6">
+          <div className="lg:col-span-6 order-1 lg:order-2">
             <CurrentStory story={currentStory} />
 
             {/* Voting Status */}
@@ -427,9 +436,9 @@ export default function Room() {
             )}
 
             {/* Voting Cards */}
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold">Cast Your Vote</h2>
-              <div className="flex gap-3 flex-wrap">
+            <div className="space-y-3 sm:space-y-4">
+              <h2 className="text-lg sm:text-xl font-semibold">Cast Your Vote</h2>
+              <div className="grid grid-cols-5 sm:flex sm:flex-wrap gap-2 sm:gap-3">
                 {VOTE_OPTIONS.map((value) => (
                   <VotingCard
                     key={value}
@@ -444,7 +453,7 @@ export default function Room() {
           </div>
 
           {/* Right Sidebar - Participants */}
-          <div className="col-span-3">
+          <div className="lg:col-span-3 order-2 lg:order-3">
             <ParticipantList
               participants={room.participants}
               votes={votes}
