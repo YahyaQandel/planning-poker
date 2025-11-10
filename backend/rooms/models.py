@@ -1,6 +1,7 @@
 import uuid
 import secrets
 import string
+import random
 from datetime import datetime
 from django.db import models
 from django.utils import timezone
@@ -15,6 +16,73 @@ def generate_session_name():
     """Generate default session name with today's date"""
     today = datetime.now().strftime("%B %d, %Y")
     return f"Planning Session For {today}"
+
+
+def generate_funny_story():
+    """Generate a random funny story with creative ID and title"""
+    
+    # Funny adjectives (51 items - tripled)
+    adjectives = [
+        "Epic", "Mysterious", "Hilarious", "Sneaky", "Magical", "Legendary", 
+        "Invisible", "Dancing", "Confused", "Caffeinated", "Procrastinating",
+        "Rebellious", "Mischievous", "Grumpy", "Sleepy", "Dramatic", "Sarcastic",
+        "Brilliant", "Chaotic", "Energetic", "Fierce", "Gigantic", "Heroic",
+        "Incredible", "Jolly", "Kinetic", "Lazy", "Mystical", "Naughty",
+        "Outstanding", "Peculiar", "Quirky", "Ridiculous", "Spectacular", "Tremendous",
+        "Unstoppable", "Vibrant", "Wacky", "Xenial", "Youthful", "Zealous",
+        "Bouncy", "Clumsy", "Dreamy", "Eccentric", "Funky", "Goofy", "Happy",
+        "Hyper", "Imaginative", "Jovial", "Kooky"
+    ]
+    
+    # Funny nouns/animals (57 items - tripled)
+    nouns = [
+        "Unicorn", "Penguin", "Dragon", "Ninja", "Pirate", "Robot", "Wizard",
+        "Llama", "Narwhal", "Platypus", "Sloth", "Flamingo", "Hedgehog", 
+        "Octopus", "Giraffe", "Kangaroo", "Panda", "Walrus", "Manatee",
+        "Koala", "Otter", "Alpaca", "Beaver", "Chinchilla", "Dolphin", "Elephant",
+        "Fox", "Goose", "Hamster", "Iguana", "Jellyfish", "Kiwi",
+        "Lemur", "Mongoose", "Newt", "Ocelot", "Parrot", "Quokka", "Raccoon",
+        "Seahorse", "Toucan", "Umbrellabird", "Vulture", "Whale", "Xerus",
+        "Yak", "Zebra", "Armadillo", "Butterfly", "Caterpillar", "Dragonfly",
+        "Firefly", "Grasshopper", "Hummingbird", "Lobster", "Mantis", "Starfish"
+    ]
+    
+    # Funny actions/tasks (48 items - tripled)
+    actions = [
+        "Learns to Code", "Drinks Coffee", "Writes Tests", "Debugs Life",
+        "Conquers Bugs", "Deploys to Space", "Refactors Reality", 
+        "Implements Magic", "Optimizes Dreams", "Merges Chaos",
+        "Commits Jokes", "Pushes Boundaries", "Reviews Universe",
+        "Scales Mountains", "Encrypts Secrets", "Caches Wisdom",
+        "Builds Castles", "Chases Rainbows", "Dances with Code", "Explores Galaxies",
+        "Fights Dragons", "Guards Treasures", "Hunts Unicorns", "Invents Time Travel",
+        "Juggles Responsibilities", "Keeps Secrets", "Launches Rockets", "Makes Magic",
+        "Navigates Storms", "Opens Portals", "Paints Masterpieces", "Questions Reality",
+        "Races Lightning", "Sings Lullabies", "Teaches Wisdom", "Unlocks Mysteries",
+        "Visits Dimensions", "Weaves Stories", "Xeroxes Dreams", "Yells at Clouds",
+        "Zones Out Completely", "Automates Everything", "Bridges Worlds", "Creates Wonders",
+        "Dazzles Audiences", "Energizes Teams", "Fixes Everything", "Generates Ideas",
+        "Hacks Reality"
+    ]
+    
+    # Team prefixes for story IDs (27 items - tripled)
+    prefixes = [
+        "EPIC", "LOL", "FUN", "WOW", "OMG", "YAY", "ZAP", "POW", "BOOM",
+        "COOL", "NICE", "STAR", "FIRE", "ROCK", "JAZZ", "WILD", "MEGA", "SUPER",
+        "ZOOM", "DASH", "BUZZ", "FIZZ", "GLOW", "SNAP", "FLEX", "VIBE", "BEAM"
+    ]
+    
+    # Generate random story
+    adjective = random.choice(adjectives)
+    noun = random.choice(nouns)
+    action = random.choice(actions)
+    prefix = random.choice(prefixes)
+    story_number = random.randint(100, 999)
+    
+    story_id = f"{prefix}-{story_number}"
+    title = f"The {adjective} {noun} {action}"
+    
+    return story_id, title
 
 
 class Room(models.Model):

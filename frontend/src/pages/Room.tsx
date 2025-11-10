@@ -197,7 +197,7 @@ export default function Room() {
   };
 
   const handleAddStory = () => {
-    if (!ws || ws.readyState !== WebSocket.OPEN || (!newStoryId && !newStoryTitle)) return;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
     ws.send(JSON.stringify({
       type: 'add_story',
@@ -348,22 +348,29 @@ export default function Room() {
         {/* Add Story Form */}
         {showAddStory && (
           <Card>
-            <CardContent className="p-4">
-              <div className="flex gap-3">
+            <CardContent className="p-4 space-y-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <Input
                   placeholder="Story ID (optional)"
                   value={newStoryId}
                   onChange={(e) => setNewStoryId(e.target.value)}
+                  className="flex-1"
                 />
                 <Input
                   placeholder="Story Title (optional)"
                   value={newStoryTitle}
                   onChange={(e) => setNewStoryTitle(e.target.value)}
+                  className="flex-1"
                 />
-                <Button onClick={handleAddStory}>Add</Button>
-                <Button variant="outline" onClick={() => setShowAddStory(false)}>
-                  Cancel
-                </Button>
+                <div className="flex gap-2">
+                  <Button onClick={handleAddStory} size="sm">Add</Button>
+                  <Button variant="outline" onClick={() => setShowAddStory(false)} size="sm">
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                💡 Leave empty for a randomly generated funny story!
               </div>
             </CardContent>
           </Card>

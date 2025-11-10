@@ -21,12 +21,14 @@ class RoomViewSet(viewsets.ModelViewSet):
 
     def create(self, request):
         """Create a new room with optional initial story"""
+        from .models import generate_funny_story
+        
         serializer = CreateRoomSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         room = Room.objects.create()
 
-        # Create initial story if provided
+        # Create initial story if provided, or generate a funny one
         story_id = serializer.validated_data.get('story_id')
         title = serializer.validated_data.get('title')
 
@@ -35,6 +37,17 @@ class RoomViewSet(viewsets.ModelViewSet):
                 room=room,
                 story_id=story_id or '',
                 title=title or '',
+                order=0
+            )
+            room.current_story = story
+            room.save()
+        else:
+            # Generate a funny story as the initial story
+            funny_id, funny_title = generate_funny_story()
+            story = Story.objects.create(
+                room=room,
+                story_id=funny_id,
+                title=funny_title,
                 order=0
             )
             room.current_story = story
@@ -77,10 +90,24 @@ class RoomViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def add_story(self, request, code=None):
         """Add a new story to estimate"""
+        from .models import generate_funny_story
+        
         room = get_object_or_404(Room, code=code)
 
         story_id = request.data.get('story_id', '')
         title = request.data.get('title', '')
+
+        # Generate funny story if both ID and title are empty
+        if not story_id and not title:
+            story_id, title = generate_funny_story()
+        # If only story_id is missing, generate a funny story_id
+        elif not story_id:
+            funny_id, _ = generate_funny_story()
+            story_id = funny_id
+        # If only title is missing, generate a funny title  
+        elif not title:
+            _, funny_title = generate_funny_story()
+            title = funny_title
 
         # Get the highest order number
         max_order = Story.objects.filter(room=room).count()

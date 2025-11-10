@@ -312,9 +312,21 @@ class RoomConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def add_story(self, story_id, title):
-        from .models import Room, Story, Vote
+        from .models import Room, Story, Vote, generate_funny_story
 
         room = Room.objects.get(code=self.room_code)
+
+        # Generate funny story if both ID and title are empty
+        if not story_id and not title:
+            story_id, title = generate_funny_story()
+        # If only story_id is missing, generate a funny story_id
+        elif not story_id:
+            funny_id, _ = generate_funny_story()
+            story_id = funny_id
+        # If only title is missing, generate a funny title  
+        elif not title:
+            _, funny_title = generate_funny_story()
+            title = funny_title
 
         # Check if story with same story_id already exists (if story_id is provided)
         if story_id:

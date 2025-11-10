@@ -99,6 +99,9 @@ export default function Home() {
                   onChange={(e) => setTitle(e.target.value)}
                 />
               </div>
+              <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                💡 Tip: Leave both fields empty and we'll create a fun, randomly generated story for you!
+              </div>
               <Button
                 className="w-full"
                 onClick={handleCreateRoom}
