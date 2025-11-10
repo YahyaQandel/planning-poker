@@ -36,6 +36,8 @@ class RoomConsumer(AsyncWebsocketConsumer):
             await self.handle_reveal(data)
         elif message_type == 'reset':
             await self.handle_reset(data)
+        elif message_type == 'confirm_points':
+            await self.handle_confirm_points(data)
         elif message_type == 'add_story':
             await self.handle_add_story(data)
         elif message_type == 'change_story':
@@ -65,15 +67,17 @@ class RoomConsumer(AsyncWebsocketConsumer):
         )
 
     async def handle_reveal(self, data):
-        await self.reveal_votes()
+        calculation_result = await self.reveal_votes()
         room_data = await self.get_room_data()
 
-        # Broadcast reveal to room
+        # Broadcast reveal to room with average calculation
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 'type': 'votes_revealed',
-                'room': room_data
+                'room': room_data,
+                'average': calculation_result['average'] if calculation_result else None,
+                'rounded': calculation_result['rounded'] if calculation_result else None
             }
         )
 
@@ -86,6 +90,20 @@ class RoomConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             {
                 'type': 'room_reset',
+                'room': room_data
+            }
+        )
+
+    async def handle_confirm_points(self, data):
+        points = data.get('points')
+        await self.confirm_story_points(points)
+        room_data = await self.get_room_data()
+
+        # Broadcast confirmation to room
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'points_confirmed',
                 'room': room_data
             }
         )
@@ -164,6 +182,14 @@ class RoomConsumer(AsyncWebsocketConsumer):
     async def votes_revealed(self, event):
         await self.send(text_data=json.dumps({
             'type': 'votes_revealed',
+            'room': event['room'],
+            'average': event.get('average'),
+            'rounded': event.get('rounded')
+        }))
+
+    async def points_confirmed(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'points_confirmed',
             'room': event['room']
         }))
 
@@ -220,7 +246,6 @@ class RoomConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def reveal_votes(self):
         from .models import Room, Vote
-        from collections import Counter
 
         room = Room.objects.get(code=self.room_code)
 
@@ -228,15 +253,17 @@ class RoomConsumer(AsyncWebsocketConsumer):
             votes = Vote.objects.filter(room=room, story=room.current_story)
             votes.update(revealed=True)
 
-            # Calculate final points
+            # Calculate average (excluding ? and coffee)
             numeric_votes = votes.exclude(value__in=['?', 'coffee']).values_list('value', flat=True)
             if numeric_votes:
-                vote_counts = Counter(numeric_votes)
-                most_common = vote_counts.most_common(1)[0][0]
+                vote_values = [int(v) for v in numeric_votes]
+                average = sum(vote_values) / len(vote_values)
+                rounded = round(average)
 
-                room.current_story.final_points = most_common
-                room.current_story.estimated_at = timezone.now()
-                room.current_story.save()
+                # Don't save yet - wait for confirmation
+                # Just mark as revealed
+                return {'average': average, 'rounded': rounded}
+        return None
 
     @database_sync_to_async
     def reset_votes(self):
@@ -246,6 +273,17 @@ class RoomConsumer(AsyncWebsocketConsumer):
 
         if room.current_story:
             Vote.objects.filter(room=room, story=room.current_story).delete()
+
+    @database_sync_to_async
+    def confirm_story_points(self, points):
+        from .models import Room
+
+        room = Room.objects.get(code=self.room_code)
+
+        if room.current_story:
+            room.current_story.final_points = str(points)
+            room.current_story.estimated_at = timezone.now()
+            room.current_story.save()
 
     @database_sync_to_async
     def add_story(self, story_id, title):

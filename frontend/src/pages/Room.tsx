@@ -8,6 +8,7 @@ import VotingCard from '@/components/VotingCard';
 import ParticipantList from '@/components/ParticipantList';
 import StorySidebar from '@/components/StorySidebar';
 import CurrentStory from '@/components/CurrentStory';
+import ConfirmPointsDialog from '@/components/ConfirmPointsDialog';
 import type { Room as RoomType, VoteValue } from '@/types/index';
 import { VOTE_OPTIONS } from '@/types/index';
 
@@ -25,6 +26,8 @@ export default function Room() {
   const [newStoryId, setNewStoryId] = useState('');
   const [newStoryTitle, setNewStoryTitle] = useState('');
   const [ws, setWs] = useState<WebSocket | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [calculationResult, setCalculationResult] = useState<{average: number, rounded: number} | null>(null);
 
   useEffect(() => {
     if (!username) {
@@ -75,9 +78,26 @@ export default function Room() {
             setRoom(data.room);
           }
 
+          // Show confirmation dialog when votes are revealed with average
+          if (data.type === 'votes_revealed' && data.average !== null) {
+            setCalculationResult({
+              average: data.average,
+              rounded: data.rounded
+            });
+            setShowConfirmDialog(true);
+          }
+
+          // Hide dialog and clear result when points are confirmed
+          if (data.type === 'points_confirmed') {
+            setShowConfirmDialog(false);
+            setCalculationResult(null);
+          }
+
           // Reset selected vote when room is reset
           if (data.type === 'room_reset') {
             setSelectedVote(null);
+            setShowConfirmDialog(false);
+            setCalculationResult(null);
           }
         };
 
@@ -155,6 +175,26 @@ export default function Room() {
   const handleCopyRoomCode = () => {
     navigator.clipboard.writeText(code || '');
     alert('Room code copied to clipboard!');
+  };
+
+  const handleConfirmPoints = () => {
+    if (!ws || ws.readyState !== WebSocket.OPEN || !calculationResult) return;
+
+    ws.send(JSON.stringify({
+      type: 'confirm_points',
+      points: calculationResult.rounded
+    }));
+  };
+
+  const handleRejectPoints = () => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+    ws.send(JSON.stringify({
+      type: 'reset'
+    }));
+
+    setShowConfirmDialog(false);
+    setCalculationResult(null);
   };
 
   if (loading) {
@@ -299,6 +339,16 @@ export default function Room() {
               votes={votes}
               revealed={revealed}
             />
+
+            {/* Confirmation UI */}
+            {showConfirmDialog && calculationResult && (
+              <ConfirmPointsDialog
+                average={calculationResult.average}
+                rounded={calculationResult.rounded}
+                onConfirm={handleConfirmPoints}
+                onReject={handleRejectPoints}
+              />
+            )}
           </div>
         </div>
       </div>

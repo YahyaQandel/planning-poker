@@ -119,15 +119,30 @@ class RoomViewSet(viewsets.ModelViewSet):
             votes = Vote.objects.filter(room=room, story=room.current_story)
             votes.update(revealed=True)
 
-            # Calculate final points (most common vote, excluding ? and coffee)
+            # Calculate average (excluding ? and coffee)
             numeric_votes = votes.exclude(value__in=['?', 'coffee']).values_list('value', flat=True)
             if numeric_votes:
-                from collections import Counter
-                vote_counts = Counter(numeric_votes)
-                most_common = vote_counts.most_common(1)[0][0]
+                # Convert to integers and calculate average
+                vote_values = [int(v) for v in numeric_votes]
+                average = sum(vote_values) / len(vote_values)
+                rounded = round(average)
 
-                room.current_story.final_points = most_common
+                # Store both average and rounded value (we'll use rounded as placeholder)
+                room.current_story.final_points = str(rounded)
                 room.current_story.estimated_at = timezone.now()
                 room.current_story.save()
+
+        return Response(RoomSerializer(room).data)
+
+    @action(detail=True, methods=['post'])
+    def confirm_points(self, request, code=None):
+        """Confirm and finalize story points"""
+        room = get_object_or_404(Room, code=code)
+        points = request.data.get('points')
+
+        if room.current_story and points:
+            room.current_story.final_points = points
+            room.current_story.estimated_at = timezone.now()
+            room.current_story.save()
 
         return Response(RoomSerializer(room).data)
