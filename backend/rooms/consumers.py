@@ -9,6 +9,7 @@ from .serializers import RoomSerializer, ParticipantSerializer, VoteSerializer
 # Set up loggers
 websocket_logger = logging.getLogger('rooms.websocket')
 db_logger = logging.getLogger('rooms.database')
+redis_logger = logging.getLogger('rooms.redis')
 
 
 class RoomConsumer(AsyncWebsocketConsumer):

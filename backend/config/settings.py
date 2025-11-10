@@ -76,10 +76,10 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
-# Channels
+# Channels with Redis logging
 CHANNEL_LAYERS = {
     'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'BACKEND': 'rooms.redis_logger.LoggingRedisChannelLayer',
         'CONFIG': {
             "hosts": [('127.0.0.1', 6379)],
         },
@@ -199,6 +199,12 @@ LOGGING = {
             'filename': os.path.join(BASE_DIR, 'logs', 'database.log'),
             'formatter': 'json',
         },
+        'redis_file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'redis.log'),
+            'formatter': 'json',
+        },
     },
     'loggers': {
         'django': {
@@ -223,6 +229,11 @@ LOGGING = {
         },
         'rooms.database': {
             'handlers': ['console', 'db_file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'rooms.redis': {
+            'handlers': ['console', 'redis_file'],
             'level': 'DEBUG',
             'propagate': False,
         },
