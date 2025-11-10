@@ -284,24 +284,26 @@ export default function Room() {
     <div className="min-h-screen bg-background p-2 sm:p-4">
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4" data-testid="room-header">
           <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
             <img 
               src="/teracloud_favico.svg" 
               alt="Teracloud Logo" 
               className="w-10 h-10 sm:w-12 sm:h-12 mt-1 flex-shrink-0"
+              data-testid="room-logo"
             />
             <div className="min-w-0 flex-1">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold break-words">{room.session_name}</h1>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold break-words" data-testid="session-name">{room.session_name}</h1>
               <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mt-1">
                 <div className="flex items-center gap-2">
                   <span className="text-xs sm:text-sm text-muted-foreground">Room:</span>
-                  <span className="font-mono font-semibold text-sm sm:text-base lg:text-lg">{code}</span>
+                  <span className="font-mono font-semibold text-sm sm:text-base lg:text-lg" data-testid="room-code">{code}</span>
                   <Button
                     size="sm"
                     variant="ghost"
                     onClick={handleCopyRoomCode}
                     className="h-6 w-6 p-0 sm:h-8 sm:w-8"
+                    data-testid="copy-room-code-button"
                   >
                     <Copy className="w-3 h-3 sm:w-4 sm:h-4" />
                   </Button>
@@ -309,7 +311,7 @@ export default function Room() {
               </div>
               <div className="mt-1">
                 <span className="text-xs sm:text-sm text-muted-foreground">User:</span>
-                <span className="font-semibold ml-1 text-sm sm:text-base">{username}</span>
+                <span className="font-semibold ml-1 text-sm sm:text-base" data-testid="current-username">{username}</span>
               </div>
             </div>
           </div>
@@ -320,6 +322,7 @@ export default function Room() {
               disabled={!currentStory}
               size="sm"
               className="text-xs sm:text-sm"
+              data-testid="reset-button"
             >
               <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Reset</span>
@@ -329,6 +332,7 @@ export default function Room() {
               disabled={!currentStory || votes.length === 0 || revealed || !allVoted}
               size="sm"
               className="text-xs sm:text-sm"
+              data-testid="reveal-button"
             >
               <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               Reveal
@@ -338,6 +342,7 @@ export default function Room() {
               onClick={() => setShowAddStory(!showAddStory)}
               size="sm"
               className="text-xs sm:text-sm"
+              data-testid="add-story-toggle-button"
             >
               <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Add </span>Story
@@ -347,7 +352,7 @@ export default function Room() {
 
         {/* Add Story Form */}
         {showAddStory && (
-          <Card>
+          <Card data-testid="add-story-form">
             <CardContent className="p-4 space-y-3">
               <div className="flex flex-col sm:flex-row gap-3">
                 <Input
@@ -355,21 +360,23 @@ export default function Room() {
                   value={newStoryId}
                   onChange={(e) => setNewStoryId(e.target.value)}
                   className="flex-1"
+                  data-testid="new-story-id-input"
                 />
                 <Input
                   placeholder="Story Title (optional)"
                   value={newStoryTitle}
                   onChange={(e) => setNewStoryTitle(e.target.value)}
                   className="flex-1"
+                  data-testid="new-story-title-input"
                 />
                 <div className="flex gap-2">
-                  <Button onClick={handleAddStory} size="sm">Add</Button>
-                  <Button variant="outline" onClick={() => setShowAddStory(false)} size="sm">
+                  <Button onClick={handleAddStory} size="sm" data-testid="add-story-button">Add</Button>
+                  <Button variant="outline" onClick={() => setShowAddStory(false)} size="sm" data-testid="cancel-add-story-button">
                     Cancel
                   </Button>
                 </div>
               </div>
-              <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+              <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded" data-testid="add-story-tip">
                 💡 Leave empty for a randomly generated funny story!
               </div>
             </CardContent>
@@ -378,11 +385,11 @@ export default function Room() {
 
         {/* Existing Story Confirmation */}
         {existingStory && (
-          <Card className="border-orange-500 bg-orange-50">
+          <Card className="border-orange-500 bg-orange-50" data-testid="existing-story-dialog">
             <CardContent className="p-4">
               <div className="space-y-3">
                 <div>
-                  <div className="font-semibold text-lg">Story Already Exists</div>
+                  <div className="font-semibold text-lg" data-testid="existing-story-title">Story Already Exists</div>
                   <div className="text-sm text-muted-foreground mt-1">
                     Story ID "{existingStory.story_id}" already exists
                     {existingStory.final_points && (
@@ -395,12 +402,14 @@ export default function Room() {
                     variant="outline"
                     onClick={handleCancelExistingStory}
                     className="flex-1"
+                    data-testid="cancel-existing-story-button"
                   >
                     Cancel
                   </Button>
                   <Button
                     onClick={handleSwitchToExistingStory}
                     className="flex-1"
+                    data-testid="switch-to-existing-story-button"
                   >
                     Switch to This Story
                   </Button>
@@ -426,14 +435,14 @@ export default function Room() {
 
             {/* Voting Status */}
             {currentStory && (
-              <Card className="mb-6">
+              <Card className="mb-6" data-testid="voting-status">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-sm text-muted-foreground" data-testid="vote-count">
                       {votes.length} / {room.participants.filter(p => p.connected).length} voted
                     </span>
                     {allVoted && !revealed && (
-                      <span className="text-sm font-medium text-green-600">
+                      <span className="text-sm font-medium text-green-600" data-testid="all-voted-indicator">
                         Everyone has voted!
                       </span>
                     )}
@@ -443,9 +452,9 @@ export default function Room() {
             )}
 
             {/* Voting Cards */}
-            <div className="space-y-3 sm:space-y-4">
-              <h2 className="text-lg sm:text-xl font-semibold">Cast Your Vote</h2>
-              <div className="grid grid-cols-5 sm:flex sm:flex-wrap gap-2 sm:gap-3">
+            <div className="space-y-3 sm:space-y-4" data-testid="voting-section">
+              <h2 className="text-lg sm:text-xl font-semibold" data-testid="voting-section-title">Cast Your Vote</h2>
+              <div className="grid grid-cols-5 sm:flex sm:flex-wrap gap-2 sm:gap-3" data-testid="voting-cards-container">
                 {VOTE_OPTIONS.map((value) => (
                   <VotingCard
                     key={value}
@@ -469,12 +478,14 @@ export default function Room() {
 
             {/* Confirmation UI */}
             {showConfirmDialog && calculationResult && (
-              <ConfirmPointsDialog
-                average={calculationResult.average}
-                rounded={calculationResult.rounded}
-                onConfirm={handleConfirmPoints}
-                onReject={handleRejectPoints}
-              />
+              <div data-testid="confirm-points-dialog">
+                <ConfirmPointsDialog
+                  average={calculationResult.average}
+                  rounded={calculationResult.rounded}
+                  onConfirm={handleConfirmPoints}
+                  onReject={handleRejectPoints}
+                />
+              </div>
             )}
           </div>
         </div>

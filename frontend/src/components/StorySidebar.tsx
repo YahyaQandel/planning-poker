@@ -20,17 +20,17 @@ export default function StorySidebar({ stories, currentStoryId, onStoryClick }: 
   }, 0);
 
   return (
-    <Card className="h-full">
+    <Card className="h-full" data-testid="stories-sidebar">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2" data-testid="stories-header">
           <FileText className="w-5 h-5" />
           Stories ({stories.length})
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
+        <div className="space-y-3" data-testid="stories-list">
           {stories.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No stories added yet</p>
+            <p className="text-sm text-muted-foreground" data-testid="no-stories-message">No stories added yet</p>
           ) : (
             <>
               {/* All Stories */}
@@ -46,16 +46,17 @@ export default function StorySidebar({ stories, currentStoryId, onStoryClick }: 
                         : 'bg-muted hover:bg-muted/80'
                     }`}
                     onClick={() => onStoryClick?.(story.id)}
+                    data-testid={`story-item-${story.id}`}
                   >
                     {story.story_id && (
                       <div className={`text-xs font-mono ${
                         story.id === currentStoryId ? 'text-primary-foreground/80' : 'text-muted-foreground'
-                      }`}>
+                      }`} data-testid={`story-id-${story.id}`}>
                         {story.story_id}
                       </div>
                     )}
                     {story.title && (
-                      <div className="text-sm font-medium">{story.title}</div>
+                      <div className="text-sm font-medium" data-testid={`story-title-${story.id}`}>{story.title}</div>
                     )}
                     {!story.story_id && !story.title && (
                       <div className={`text-sm ${
@@ -71,7 +72,7 @@ export default function StorySidebar({ stories, currentStoryId, onStoryClick }: 
                         {story.final_points ? 'Points:' : 'Not estimated'}
                       </span>
                       {story.final_points && (
-                        <span className="font-bold text-lg">
+                        <span className="font-bold text-lg" data-testid={`story-points-${story.id}`}>
                           {story.final_points === 'coffee' ? '☕' : story.final_points}
                         </span>
                       )}
@@ -85,10 +86,10 @@ export default function StorySidebar({ stories, currentStoryId, onStoryClick }: 
 
               {/* Total Section */}
               {estimatedStories.length > 0 && (
-                <div className="pt-3 border-t">
+                <div className="pt-3 border-t" data-testid="stories-total-section">
                   <div className="flex items-center justify-between p-3 rounded-lg bg-primary text-primary-foreground">
-                    <span className="font-semibold">Total ({estimatedStories.length} estimated)</span>
-                    <span className="font-bold text-2xl">{total}</span>
+                    <span className="font-semibold" data-testid="total-label">Total ({estimatedStories.length} estimated)</span>
+                    <span className="font-bold text-2xl" data-testid="total-points">{total}</span>
                   </div>
                 </div>
               )}

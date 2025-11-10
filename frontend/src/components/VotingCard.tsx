@@ -29,6 +29,7 @@ export default function VotingCard({ value, selected, onClick, disabled }: Votin
         transform: 'scale(1)'
       } : undefined}
       onClick={disabled ? undefined : onClick}
+      data-testid={`voting-card-${value}`}
     >
       <span className="flex items-center justify-center w-full h-full">
         {value === 'coffee' ? <Coffee className="w-4 h-4 sm:w-6 sm:h-6 lg:w-8 lg:h-8" /> : value}
