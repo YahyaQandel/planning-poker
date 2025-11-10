@@ -1,9 +1,15 @@
 import json
+import logging
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.utils import timezone
 from .models import Room, Participant, Vote, Story
 from .serializers import RoomSerializer, ParticipantSerializer, VoteSerializer
+
+# Set up loggers
+websocket_logger = logging.getLogger('rooms.websocket')
+db_logger = logging.getLogger('rooms.database')
+redis_logger = logging.getLogger('rooms.redis')
 
 
 class RoomConsumer(AsyncWebsocketConsumer):
@@ -11,22 +17,31 @@ class RoomConsumer(AsyncWebsocketConsumer):
         self.room_code = self.scope['url_route']['kwargs']['room_code']
         self.room_group_name = f'room_{self.room_code}'
         self.participant_id = None
+        
+        websocket_logger.info(f"WS CONNECT - New WebSocket connection to room {self.room_code}")
+        websocket_logger.debug(f"WS CONNECT - Channel name: {self.channel_name}")
 
         # Join room group
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
         )
+        websocket_logger.info(f"WS CONNECT - Joined group {self.room_group_name}")
 
         await self.accept()
+        websocket_logger.info(f"WS CONNECT - WebSocket connection accepted for room {self.room_code}")
 
     async def disconnect(self, close_code):
+        websocket_logger.info(f"WS DISCONNECT - WebSocket disconnecting from room {self.room_code}, close_code: {close_code}")
+        
         # Mark participant as disconnected if we have their ID
         if self.participant_id:
+            websocket_logger.info(f"WS DISCONNECT - Marking participant {self.participant_id} as disconnected")
             await self.mark_user_disconnected(self.participant_id)
             room_data = await self.get_room_data()
 
             # Broadcast user disconnection to room
+            websocket_logger.info(f"WS DISCONNECT - Broadcasting user_left for participant {self.participant_id}")
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
@@ -35,70 +50,117 @@ class RoomConsumer(AsyncWebsocketConsumer):
                     'room': room_data
                 }
             )
+        else:
+            websocket_logger.info(f"WS DISCONNECT - No participant ID to disconnect")
 
         # Leave room group
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
         )
+        websocket_logger.info(f"WS DISCONNECT - Left group {self.room_group_name}")
 
     async def receive(self, text_data):
-        data = json.loads(text_data)
-        message_type = data.get('type')
+        websocket_logger.info(f"WS RECEIVE - Message received in room {self.room_code}")
+        websocket_logger.debug(f"WS RECEIVE - Raw message: {text_data}")
+        
+        try:
+            data = json.loads(text_data)
+            message_type = data.get('type')
+            websocket_logger.info(f"WS RECEIVE - Message type: {message_type}")
+            websocket_logger.debug(f"WS RECEIVE - Parsed data: {json.dumps(data, default=str)}")
 
-        if message_type == 'vote':
-            await self.handle_vote(data)
-        elif message_type == 'reveal':
-            await self.handle_reveal(data)
-        elif message_type == 'reset':
-            await self.handle_reset(data)
-        elif message_type == 'confirm_points':
-            await self.handle_confirm_points(data)
-        elif message_type == 'add_story':
-            await self.handle_add_story(data)
-        elif message_type == 'change_story':
-            await self.handle_change_story(data)
-        elif message_type == 'switch_to_existing_story':
-            await self.handle_switch_to_existing_story(data)
-        elif message_type == 'user_joined':
-            await self.handle_user_joined(data)
-        elif message_type == 'user_left':
-            await self.handle_user_left(data)
+            if message_type == 'vote':
+                websocket_logger.info(f"WS RECEIVE - Handling vote message")
+                await self.handle_vote(data)
+            elif message_type == 'reveal':
+                websocket_logger.info(f"WS RECEIVE - Handling reveal message")
+                await self.handle_reveal(data)
+            elif message_type == 'reset':
+                websocket_logger.info(f"WS RECEIVE - Handling reset message")
+                await self.handle_reset(data)
+            elif message_type == 'confirm_points':
+                websocket_logger.info(f"WS RECEIVE - Handling confirm_points message")
+                await self.handle_confirm_points(data)
+            elif message_type == 'add_story':
+                websocket_logger.info(f"WS RECEIVE - Handling add_story message")
+                await self.handle_add_story(data)
+            elif message_type == 'change_story':
+                websocket_logger.info(f"WS RECEIVE - Handling change_story message")
+                await self.handle_change_story(data)
+            elif message_type == 'switch_to_existing_story':
+                websocket_logger.info(f"WS RECEIVE - Handling switch_to_existing_story message")
+                await self.handle_switch_to_existing_story(data)
+            elif message_type == 'user_joined':
+                websocket_logger.info(f"WS RECEIVE - Handling user_joined message")
+                await self.handle_user_joined(data)
+            elif message_type == 'user_left':
+                websocket_logger.info(f"WS RECEIVE - Handling user_left message")
+                await self.handle_user_left(data)
+            else:
+                websocket_logger.warning(f"WS RECEIVE - Unknown message type: {message_type}")
+                
+        except json.JSONDecodeError as e:
+            websocket_logger.error(f"WS RECEIVE - Invalid JSON in message: {str(e)}")
+        except Exception as e:
+            websocket_logger.error(f"WS RECEIVE - Error handling message: {str(e)}")
+            raise
 
     async def handle_vote(self, data):
         participant_id = data.get('participant_id')
         story_id = data.get('story_id')
         value = data.get('value')
+        
+        websocket_logger.info(f"WS VOTE - Participant {participant_id} voting '{value}' for story {story_id} in room {self.room_code}")
+        websocket_logger.debug(f"WS VOTE - Vote data: {json.dumps(data, default=str)}")
 
-        vote = await self.save_vote(participant_id, story_id, value)
-        room_data = await self.get_room_data()
+        try:
+            vote = await self.save_vote(participant_id, story_id, value)
+            websocket_logger.info(f"WS VOTE - Vote saved successfully for participant {participant_id}")
+            
+            room_data = await self.get_room_data()
 
-        # Broadcast vote to room
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                'type': 'vote_cast',
-                'participant_id': participant_id,
-                'has_voted': True,
-                'room': room_data
-            }
-        )
+            # Broadcast vote to room
+            websocket_logger.info(f"WS VOTE - Broadcasting vote_cast to room {self.room_code}")
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'vote_cast',
+                    'participant_id': participant_id,
+                    'has_voted': True,
+                    'room': room_data
+                }
+            )
+            websocket_logger.info(f"WS VOTE - Vote broadcast completed")
+        except Exception as e:
+            websocket_logger.error(f"WS VOTE - Error handling vote: {str(e)}")
+            raise
 
     async def handle_reveal(self, data):
-        calculation_result = await self.reveal_votes()
-        room_data = await self.get_room_data()
+        websocket_logger.info(f"WS REVEAL - Revealing votes in room {self.room_code}")
+        
+        try:
+            calculation_result = await self.reveal_votes()
+            websocket_logger.info(f"WS REVEAL - Votes revealed, calculation result: {calculation_result}")
+            
+            room_data = await self.get_room_data()
 
-        # Broadcast reveal to room with average calculation
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                'type': 'votes_revealed',
-                'room': room_data,
-                'average': calculation_result['average'] if calculation_result else None,
-                'rounded': calculation_result['rounded'] if calculation_result else None,
-                'discussion_message': calculation_result['discussion_message'] if calculation_result else None
-            }
-        )
+            # Broadcast reveal to room with average calculation
+            websocket_logger.info(f"WS REVEAL - Broadcasting votes_revealed to room {self.room_code}")
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'votes_revealed',
+                    'room': room_data,
+                    'average': calculation_result['average'] if calculation_result else None,
+                    'rounded': calculation_result['rounded'] if calculation_result else None,
+                    'discussion_message': calculation_result['discussion_message'] if calculation_result else None
+                }
+            )
+            websocket_logger.info(f"WS REVEAL - Reveal broadcast completed")
+        except Exception as e:
+            websocket_logger.error(f"WS REVEAL - Error handling reveal: {str(e)}")
+            raise
 
     async def handle_reset(self, data):
         await self.reset_votes()
@@ -130,27 +192,39 @@ class RoomConsumer(AsyncWebsocketConsumer):
     async def handle_add_story(self, data):
         story_id = data.get('story_id', '')
         title = data.get('title', '')
+        
+        websocket_logger.info(f"WS ADD_STORY - Adding story '{story_id}': '{title}' to room {self.room_code}")
+        websocket_logger.debug(f"WS ADD_STORY - Story data: {json.dumps(data, default=str)}")
 
-        result = await self.add_story(story_id, title)
-        room_data = await self.get_room_data()
+        try:
+            result = await self.add_story(story_id, title)
+            websocket_logger.info(f"WS ADD_STORY - Story creation result: exists={result.get('exists')}")
+            
+            room_data = await self.get_room_data()
 
-        # If story already exists, ask for confirmation
-        if result.get('exists'):
-            await self.send(text_data=json.dumps({
-                'type': 'story_exists',
-                'story': result['story'],
-                'room': room_data
-            }))
-        else:
-            # Broadcast new story to room
-            await self.channel_layer.group_send(
-                self.room_group_name,
-                {
-                    'type': 'story_added',
+            # If story already exists, ask for confirmation
+            if result.get('exists'):
+                websocket_logger.info(f"WS ADD_STORY - Story already exists, sending confirmation request")
+                await self.send(text_data=json.dumps({
+                    'type': 'story_exists',
                     'story': result['story'],
                     'room': room_data
-                }
-            )
+                }))
+            else:
+                # Broadcast new story to room
+                websocket_logger.info(f"WS ADD_STORY - Broadcasting story_added to room {self.room_code}")
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        'type': 'story_added',
+                        'story': result['story'],
+                        'room': room_data
+                    }
+                )
+                websocket_logger.info(f"WS ADD_STORY - Story broadcast completed")
+        except Exception as e:
+            websocket_logger.error(f"WS ADD_STORY - Error adding story: {str(e)}")
+            raise
 
     async def handle_change_story(self, data):
         story_id = data.get('story_id')

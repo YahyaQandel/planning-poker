@@ -38,6 +38,7 @@ import VoteCard from '@/components/modern/VoteCard';
 import ParticipantCard from '@/components/modern/ParticipantCard';
 import HeaderBar from '@/components/modern/HeaderBar';
 import { cn } from '@/lib/utils';
+import { logger, LogCategory } from '@/lib/logger';
 
 interface Room {
   code: string;
@@ -95,53 +96,125 @@ function RoomModern() {
   const currentParticipantId = localStorage.getItem('participant_id');
   const currentUsername = localStorage.getItem('username');
   const currentSessionId = localStorage.getItem('session_id');
+  
+  const componentName = 'RoomModern';
+  
+  // Set up logging context
+  useEffect(() => {
+    logger.componentMount(componentName, { 
+      roomCode: code, 
+      participantId: currentParticipantId,
+      username: currentUsername 
+    });
+    
+    if (code) {
+      logger.setRoom(code);
+    }
+    if (currentUsername) {
+      logger.setUser(currentUsername);
+    }
+    
+    return () => {
+      logger.componentUnmount(componentName);
+    };
+  }, [code, currentParticipantId, currentUsername]);
 
   // Fetch room data
   useEffect(() => {
     const fetchRoom = async () => {
+      logger.info(LogCategory.API_REQUEST, 'Fetching room data', { roomCode: code }, componentName);
+      const startTime = performance.now();
+      
       try {
+        logger.apiRequest('GET', `${import.meta.env.VITE_API_URL}/rooms/${code}/`, undefined, componentName);
         const response = await fetch(`${import.meta.env.VITE_API_URL}/rooms/${code}/`);
+        const duration = performance.now() - startTime;
+        
         if (response.ok) {
           const data = await response.json();
+          logger.apiResponse('GET', `${import.meta.env.VITE_API_URL}/rooms/${code}/`, response.status, data, componentName);
+          logger.performance('Fetch room data', duration, componentName);
+          logger.info(LogCategory.COMPONENT_LIFECYCLE, 'Room data loaded successfully', { 
+            roomCode: code,
+            participantCount: data.participants?.length || 0,
+            storyCount: data.stories?.length || 0 
+          }, componentName);
           setRoom(data);
         } else {
+          logger.apiResponse('GET', `${import.meta.env.VITE_API_URL}/rooms/${code}/`, response.status, undefined, componentName);
+          logger.warn(LogCategory.NAVIGATION, `Room ${code} not found, redirecting to home`, { status: response.status }, componentName);
           navigate('/');
         }
       } catch (error) {
-        console.error('Failed to fetch room:', error);
+        const duration = performance.now() - startTime;
+        logger.error(LogCategory.API_REQUEST, 'Failed to fetch room data', { 
+          error: error instanceof Error ? error.message : String(error),
+          roomCode: code,
+          duration
+        }, componentName);
+        logger.navigation(`/room/${code}`, '/', componentName);
         navigate('/');
       }
     };
 
-    fetchRoom();
+    if (code) {
+      fetchRoom();
+    }
   }, [code, navigate]);
 
   // WebSocket connection
   useEffect(() => {
-    if (!code || !currentParticipantId) return;
+    if (!code || !currentParticipantId) {
+      logger.warn(LogCategory.WEBSOCKET_SEND, 'Cannot establish WebSocket - missing room code or participant ID', {
+        code,
+        currentParticipantId
+      }, componentName);
+      return;
+    }
 
     const wsUrl = `${import.meta.env.VITE_WS_URL}/ws/room/${code}/`;
+    logger.info(LogCategory.WEBSOCKET_SEND, 'Establishing WebSocket connection', { wsUrl }, componentName);
     const websocket = new WebSocket(wsUrl);
     
     websocket.onopen = () => {
-      console.log('WebSocket connected');
-      websocket.send(JSON.stringify({
+      logger.info(LogCategory.WEBSOCKET_RECEIVE, 'WebSocket connection established', { wsUrl }, componentName);
+      
+      const joinMessage = {
         type: 'user_joined',
-        username: currentUsername
-      }));
+        username: currentUsername,
+        participant_id: currentParticipantId
+      };
+      
+      logger.websocketSend('user_joined', joinMessage, componentName);
+      websocket.send(JSON.stringify(joinMessage));
     };
 
     websocket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      handleWebSocketMessage(data);
+      try {
+        const data = JSON.parse(event.data);
+        logger.websocketReceive(data.type, data, componentName);
+        handleWebSocketMessage(data);
+      } catch (error) {
+        logger.error(LogCategory.WEBSOCKET_RECEIVE, 'Failed to parse WebSocket message', {
+          error: error instanceof Error ? error.message : String(error),
+          rawData: event.data
+        }, componentName);
+      }
     };
 
-    websocket.onclose = () => {
-      console.log('WebSocket disconnected');
+    websocket.onclose = (event) => {
+      logger.warn(LogCategory.WEBSOCKET_RECEIVE, 'WebSocket connection closed', {
+        code: event.code,
+        reason: event.reason,
+        wasClean: event.wasClean
+      }, componentName);
     };
 
     websocket.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      logger.error(LogCategory.WEBSOCKET_RECEIVE, 'WebSocket connection error', {
+        error: error instanceof Error ? error.message : String(error),
+        wsUrl
+      }, componentName);
     };
 
     wsRef.current = websocket;
@@ -188,23 +261,54 @@ function RoomModern() {
   };
 
   const handleVote = (value: string) => {
-    if (!ws || ws.readyState !== WebSocket.OPEN || !room?.current_story_data) return;
+    logger.userAction(`Vote cast: ${value}`, {
+      value,
+      storyId: room?.current_story_data?.id,
+      participantId: currentParticipantId
+    }, componentName);
     
-    setSelectedVote(value);
-    ws.send(JSON.stringify({
+    if (!ws || ws.readyState !== WebSocket.OPEN || !room?.current_story_data) {
+      logger.warn(LogCategory.USER_ACTION, 'Cannot cast vote - invalid state', {
+        wsReady: ws?.readyState === WebSocket.OPEN,
+        hasCurrentStory: !!room?.current_story_data,
+        value
+      }, componentName);
+      return;
+    }
+    
+    const voteMessage = {
       type: 'vote',
       participant_id: currentParticipantId,
       story_id: room.current_story_data.id,
       value: value
-    }));
+    };
+    
+    setSelectedVote(value);
+    logger.websocketSend('vote', voteMessage, componentName);
+    ws.send(JSON.stringify(voteMessage));
   };
 
   const handleReveal = () => {
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    ws.send(JSON.stringify({ type: 'reveal' }));
+    logger.userAction('Reveal votes requested', {
+      currentStory: room?.current_story_data?.id
+    }, componentName);
+    
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      logger.warn(LogCategory.USER_ACTION, 'Cannot reveal votes - WebSocket not ready', {
+        wsReady: ws?.readyState === WebSocket.OPEN
+      }, componentName);
+      return;
+    }
+    
+    const revealMessage = { type: 'reveal' };
+    logger.websocketSend('reveal', revealMessage, componentName);
+    ws.send(JSON.stringify(revealMessage));
   };
 
   const handleReset = () => {
+    logger.userAction('Reset confirmation dialog opened', {
+      currentStory: room?.current_story_data?.id
+    }, componentName);
     setShowResetConfirm(true);
   };
 
