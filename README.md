@@ -138,22 +138,10 @@ Alice        [checkmark] Hidden
 #### **State 4: Votes Revealed**
 ```
 Cast Your Vote (Disabled)
-[1] [2] [3] [5] [8] [13] [21] [?] [☕]
-
-Participants (4):              
-John         [8] 
-Mary         [5]   
-Bob          [3]
-Alice        [13]
-
-┌─────────────────────────────────────┐
-│        Average Calculation          │
-│                                     │
-│  Average: 7.25  →  Rounded: 7      │
-│                                     │
-│  [Re-vote]           [Confirm]      │
-└─────────────────────────────────────┘
+[1] [2] [3] [5] [8] [13] [21] [?] [coffee]
 ```
+
+![Average calculation](images/average-calculation.png)
 
 ### 4. Story Management
 
@@ -173,31 +161,19 @@ Alice        [13]
 
 #### **Story States Visual Guide**
 
-```
-Stories Panel:
+![Estimated stories](images/estimated-stories.png)
 
-STORY-001: Login System (8 pts)     <- Estimated (Green)
-STORY-002: User Dashboard           <- Current + Unestimated (Blue ring + Gray)
-STORY-003: Payment Flow (13 pts)   <- Current + Estimated (Blue ring + Green)
-STORY-004: Admin Panel               <- Unestimated (Gray)
-
-Total: 21 points (2 estimated)
-```
+**Story State Indicators:**
+- **Green**: Estimated (Green)
+- **Blue Ring**: Currently active story
+- **Gray**: Unestimated stories
+- **Running Total**: Sum of all estimated story points
 
 ### 5. Reset & Confirmation Flow
 
 #### **Reset Confirmation Dialog**
-```
-┌─────────────────────────────────────┐
-│          Reset All Votes?           │
-│                                     │
-│ This will clear all votes for the   │
-│ current story. Everyone will need   │
-│ to vote again.                      │
-│                                     │
-│  [Cancel]     [Reset All Votes]     │
-└─────────────────────────────────────┘
-```
+
+![Reset all votes](images/reset-all-votes.png)
 
 **Reset Behavior:**
 - Clears all participant votes

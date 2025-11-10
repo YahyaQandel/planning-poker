@@ -95,7 +95,8 @@ class RoomConsumer(AsyncWebsocketConsumer):
                 'type': 'votes_revealed',
                 'room': room_data,
                 'average': calculation_result['average'] if calculation_result else None,
-                'rounded': calculation_result['rounded'] if calculation_result else None
+                'rounded': calculation_result['rounded'] if calculation_result else None,
+                'discussion_message': calculation_result['discussion_message'] if calculation_result else None
             }
         )
 
@@ -239,7 +240,8 @@ class RoomConsumer(AsyncWebsocketConsumer):
             'type': 'votes_revealed',
             'room': event['room'],
             'average': event.get('average'),
-            'rounded': event.get('rounded')
+            'rounded': event.get('rounded'),
+            'discussion_message': event.get('discussion_message')
         }))
 
     async def points_confirmed(self, event):
@@ -308,16 +310,114 @@ class RoomConsumer(AsyncWebsocketConsumer):
             votes = Vote.objects.filter(room=room, story=room.current_story)
             votes.update(revealed=True)
 
-            # Calculate average (excluding ? and coffee)
+            # Calculate estimate using Planning Poker best practices (excluding ? and coffee)
             numeric_votes = votes.exclude(value__in=['?', 'coffee']).values_list('value', flat=True)
             if numeric_votes:
                 vote_values = [int(v) for v in numeric_votes]
-                average = sum(vote_values) / len(vote_values)
-                rounded = round(average)
+                average = sum(vote_values) / len(vote_values)  # Keep for display
+                rounded = self.calculate_planning_poker_estimate(numeric_votes)
 
+                # Check for discussion suggestion
+                discussion_message = self.get_discussion_suggestion(votes, numeric_votes)
+                
                 # Don't save yet - wait for confirmation
                 # Just mark as revealed
-                return {'average': average, 'rounded': rounded}
+                return {
+                    'average': average, 
+                    'rounded': rounded,
+                    'discussion_message': discussion_message
+                }
+        return None
+
+    def calculate_planning_poker_estimate(self, votes):
+        """Calculate estimate using Planning Poker best practices"""
+        fibonacci_sequence = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89]
+        
+        if not votes:
+            return None
+            
+        # Convert votes to integers and sort
+        vote_values = sorted([int(v) for v in votes])
+        min_vote = vote_values[0]
+        max_vote = vote_values[-1]
+        
+        # Find positions in Fibonacci sequence
+        min_pos = next((i for i, fib in enumerate(fibonacci_sequence) if fib >= min_vote), 0)
+        max_pos = next((i for i, fib in enumerate(fibonacci_sequence) if fib >= max_vote), len(fibonacci_sequence) - 1)
+        
+        # Check for wide spread (more than 2 Fibonacci steps apart)
+        spread = max_pos - min_pos
+        
+        if spread > 2:
+            # Wide spread - suggest towards higher estimate with median approach
+            # This encourages discussion and tends toward the complexity some see
+            if len(vote_values) == 1:
+                return vote_values[0]
+            
+            # Use 75th percentile approach for wide spreads
+            import statistics
+            percentile_75 = statistics.quantiles(vote_values, n=4)[2]  # 75th percentile
+            
+            # Round up to nearest Fibonacci
+            for fib in fibonacci_sequence:
+                if percentile_75 <= fib:
+                    return fib
+            return fibonacci_sequence[-1]
+        else:
+            # Normal spread - use median or standard approach
+            import statistics
+            median = statistics.median(vote_values)
+            
+            # Round to nearest Fibonacci (up)
+            for fib in fibonacci_sequence:
+                if median <= fib:
+                    return fib
+            return fibonacci_sequence[-1]
+
+    def get_discussion_suggestion(self, all_votes, numeric_votes):
+        """Generate discussion suggestion when there are wide spreads in votes"""
+        if not numeric_votes or len(numeric_votes) < 2:
+            return None
+            
+        # Convert to integers and find min/max
+        vote_values = [int(v) for v in numeric_votes]
+        min_vote = min(vote_values)
+        max_vote = max(vote_values)
+        
+        # Find Fibonacci positions
+        fibonacci_sequence = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89]
+        min_pos = next((i for i, fib in enumerate(fibonacci_sequence) if fib >= min_vote), 0)
+        max_pos = next((i for i, fib in enumerate(fibonacci_sequence) if fib >= max_vote), len(fibonacci_sequence) - 1)
+        
+        # Check for wide spread (more than 2 Fibonacci steps apart)
+        spread = max_pos - min_pos
+        
+        if spread > 2:
+            # Find participants with min and max votes
+            min_voters = []
+            max_voters = []
+            
+            for vote in all_votes:
+                if vote.value not in ['?', 'coffee']:
+                    vote_val = int(vote.value)
+                    if vote_val == min_vote:
+                        min_voters.append(vote.participant.username)
+                    elif vote_val == max_vote:
+                        max_voters.append(vote.participant.username)
+            
+            # Create discussion message
+            min_voter = min_voters[0] if min_voters else "someone"
+            max_voter = max_voters[0] if max_voters else "someone"
+            
+            return {
+                "message": f"Wide spread detected! {min_voter} (voted {min_vote}) and {max_voter} (voted {max_vote}) should discuss the story complexity.",
+                "min_vote": min_vote,
+                "max_vote": max_vote,
+                "min_voter": min_voter,
+                "max_voter": max_voter,
+                "spread_level": "high" if spread > 4 else "medium"
+            }
+        
         return None
 
     @database_sync_to_async

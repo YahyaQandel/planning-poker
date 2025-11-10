@@ -88,7 +88,7 @@ function RoomModern() {
   const [showExistingStoryDialog, setShowExistingStoryDialog] = useState(false);
   const [existingStory, setExistingStory] = useState<any>(null);
   const [showAverageModal, setShowAverageModal] = useState(false);
-  const [averageData, setAverageData] = useState<{ average: number; rounded: number } | null>(null);
+  const [averageData, setAverageData] = useState<{ average: number; rounded: number; discussion_message?: any } | null>(null);
   const [newStory, setNewStory] = useState({ story_id: '', title: '' });
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -172,7 +172,11 @@ function RoomModern() {
       case 'votes_revealed':
         setRoom(data.room);
         if (data.average && data.rounded) {
-          setAverageData({ average: data.average, rounded: data.rounded });
+          setAverageData({ 
+            average: data.average, 
+            rounded: data.rounded,
+            discussion_message: data.discussion_message
+          });
           setShowAverageModal(true);
         }
         break;
@@ -242,14 +246,20 @@ function RoomModern() {
     }
   };
 
+  const handleCloseAverageModal = (isOpen: boolean) => {
+    if (!isOpen) {
+      setShowAverageModal(false);
+      setAverageData(null);
+    }
+  };
+
   const handleConfirmPoints = (points: number) => {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     ws.send(JSON.stringify({
       type: 'confirm_points',
       points: points.toString()
     }));
-    setShowAverageModal(false);
-    setAverageData(null);
+    handleCloseAverageModal(false);
   };
 
   const handleLeaveRoom = () => {
@@ -510,7 +520,7 @@ function RoomModern() {
           </AlertDialogContent>
         </AlertDialog>
 
-        <Dialog open={showAverageModal} onOpenChange={setShowAverageModal}>
+        <Dialog open={showAverageModal} onOpenChange={handleCloseAverageModal}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Average Calculation</DialogTitle>
@@ -530,12 +540,28 @@ function RoomModern() {
                   {averageData?.rounded}
                 </p>
               </div>
+              
+              {averageData?.discussion_message && (
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mt-4">
+                  <div className="flex items-start gap-2">
+                    <Users className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-orange-800 text-sm mb-1">
+                        Discussion Recommended
+                      </p>
+                      <p className="text-orange-700 text-sm">
+                        {averageData.discussion_message.message}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             <DialogFooter className="sm:justify-center gap-3">
               <Button
                 variant="outline"
                 onClick={() => {
-                  setShowAverageModal(false);
+                  handleCloseAverageModal(false);
                   handleConfirmReset();
                 }}
               >
