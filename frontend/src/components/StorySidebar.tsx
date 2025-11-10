@@ -39,35 +39,39 @@ export default function StorySidebar({ stories, currentStoryId, onStoryClick }: 
                   <div
                     key={story.id}
                     className={`p-3 rounded-lg cursor-pointer transition-colors space-y-1 ${
-                      story.id === currentStoryId
-                        ? 'bg-primary text-primary-foreground'
-                        : story.final_points
+                      story.final_points
                         ? 'bg-green-50 border border-green-200 hover:bg-green-100'
                         : 'bg-muted hover:bg-muted/80'
+                    } ${
+                      story.id === currentStoryId
+                        ? 'ring-2 ring-blue-500 border-blue-500'
+                        : ''
                     }`}
                     onClick={() => onStoryClick?.(story.id)}
                     data-testid={`story-item-${story.id}`}
                   >
                     {story.story_id && (
                       <div className={`text-xs font-mono ${
-                        story.id === currentStoryId ? 'text-primary-foreground/80' : 'text-muted-foreground'
+                        story.id === currentStoryId ? 'text-blue-700 font-semibold' : 'text-muted-foreground'
                       }`} data-testid={`story-id-${story.id}`}>
                         {story.story_id}
                       </div>
                     )}
                     {story.title && (
-                      <div className="text-sm font-medium" data-testid={`story-title-${story.id}`}>{story.title}</div>
+                      <div className={`text-sm font-medium ${
+                        story.id === currentStoryId ? 'text-blue-700 font-semibold' : ''
+                      }`} data-testid={`story-title-${story.id}`}>{story.title}</div>
                     )}
                     {!story.story_id && !story.title && (
                       <div className={`text-sm ${
-                        story.id === currentStoryId ? 'text-primary-foreground/80' : 'text-muted-foreground'
+                        story.id === currentStoryId ? 'text-blue-700 font-semibold' : 'text-muted-foreground'
                       }`}>
                         Untitled Story
                       </div>
                     )}
                     <div className="flex items-center justify-between">
                       <span className={`text-xs ${
-                        story.id === currentStoryId ? 'text-primary-foreground/80' : 'text-muted-foreground'
+                        story.id === currentStoryId ? 'text-blue-700' : 'text-muted-foreground'
                       }`}>
                         {story.final_points ? 'Points:' : 'Not estimated'}
                       </span>
