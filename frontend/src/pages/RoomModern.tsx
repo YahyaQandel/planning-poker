@@ -9,7 +9,12 @@ import {
   CheckCircle,
   XCircle,
   Layers,
-  Users
+  Users,
+  UserX,
+  X,
+  Grid3x3,
+  CircleDot,
+  Table
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,8 +42,10 @@ import StoryCard from '@/components/modern/StoryCard';
 import VoteCard from '@/components/modern/VoteCard';
 import ParticipantCard from '@/components/modern/ParticipantCard';
 import HeaderBar from '@/components/modern/HeaderBar';
+import { RoundTableReveal, type TableState, type Participant as TableParticipant, type VoteValue } from '@/components/RoundTableReveal';
 import { cn } from '@/lib/utils';
 import { logger, LogCategory } from '@/lib/logger';
+import { apiClient } from '@/lib/api';
 
 interface Room {
   code: string;
@@ -81,16 +88,19 @@ function RoomModern() {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const componentName = 'RoomModern';
   const [room, setRoom] = useState<Room | null>(null);
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [selectedVote, setSelectedVote] = useState<string | null>(null);
   const [showAddStory, setShowAddStory] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showCleanRoomConfirm, setShowCleanRoomConfirm] = useState(false);
   const [showExistingStoryDialog, setShowExistingStoryDialog] = useState(false);
   const [existingStory, setExistingStory] = useState<any>(null);
   const [showAverageModal, setShowAverageModal] = useState(false);
   const [averageData, setAverageData] = useState<{ average: number; rounded: number; discussion_message?: any } | null>(null);
   const [newStory, setNewStory] = useState({ story_id: '', title: '' });
+  const [viewMode, setViewMode] = useState<'list' | 'table'>('list');
   const wsRef = useRef<WebSocket | null>(null);
 
   const currentParticipantId = localStorage.getItem('participant_id');
@@ -234,13 +244,30 @@ function RoomModern() {
   const handleWebSocketMessage = (data: any) => {
     switch (data.type) {
       case 'vote_cast':
-      case 'room_reset':
       case 'story_changed':
       case 'story_added':
       case 'user_joined':
       case 'user_left':
       case 'points_confirmed':
         setRoom(data.room);
+        break;
+      case 'room_reset':
+        setRoom(data.room);
+        setShowResetConfirm(false);
+        setShowCleanRoomConfirm(false);
+        break;
+      case 'room_cleaned':
+        setRoom(data.room);
+        logger.info(LogCategory.WEBSOCKET_RECEIVE, 'Room cleaned notification received', {
+          removedCount: data.removed_count,
+          votesRemoved: data.votes_removed,
+          removedParticipants: data.removed_participants
+        }, componentName);
+        toast({
+          title: "Room Cleaned",
+          description: `Removed ${data.removed_count} disconnected participants`,
+          duration: 3000,
+        });
         break;
       case 'votes_revealed':
         setRoom(data.room);
@@ -366,6 +393,22 @@ function RoomModern() {
     handleCloseAverageModal(false);
   };
 
+  const handleCleanRoom = () => {
+    setShowCleanRoomConfirm(true);
+  };
+
+  const handleConfirmCleanRoom = () => {
+    if (!ws || ws.readyState !== WebSocket.OPEN || !code) return;
+
+    logger.userAction('Clean room requested', { roomCode: code }, componentName);
+    
+    ws.send(JSON.stringify({
+      type: 'clean_room'
+    }));
+
+    setShowCleanRoomConfirm(false);
+  };
+
   const handleLeaveRoom = () => {
     localStorage.removeItem('participant_id');
     localStorage.removeItem('username');
@@ -486,6 +529,15 @@ function RoomModern() {
                   >
                     <RefreshCw className="w-4 h-4 mr-2" />
                     Reset
+                  </Button>
+                  <Button
+                    onClick={handleCleanRoom}
+                    variant="outline"
+                    className="border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                    data-testid="clean-room-button"
+                  >
+                    <UserX className="w-4 h-4 mr-2" />
+                    Clean Room
                   </Button>
                   <Button
                     onClick={handleReveal}
@@ -619,6 +671,31 @@ function RoomModern() {
                 className="bg-red-500 hover:bg-red-600"
               >
                 Reset All Votes
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Clean Room Confirmation Dialog */}
+        <AlertDialog open={showCleanRoomConfirm} onOpenChange={setShowCleanRoomConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <UserX className="w-5 h-5 text-red-600" />
+                Clean Room - Remove Disconnected Participants?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently remove all disconnected participants and their votes from this room. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleConfirmCleanRoom}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                <UserX className="w-4 h-4 mr-2" />
+                Clean Room
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

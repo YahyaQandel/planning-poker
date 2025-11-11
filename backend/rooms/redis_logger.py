@@ -43,9 +43,14 @@ class LoggingRedisChannelLayer(RedisChannelLayer):
             duration = (asyncio.get_event_loop().time() - start_time) * 1000
             
             if result:
-                channel, message = result
-                redis_logger.info(f"REDIS RECEIVE SUCCESS - Channel: {channel}, Duration: {duration:.2f}ms")
-                redis_logger.debug(f"REDIS RECEIVE - Message: {json.dumps(message, default=str)}")
+                try:
+                    channel, message = result
+                    redis_logger.info(f"REDIS RECEIVE SUCCESS - Channel: {channel}, Duration: {duration:.2f}ms")
+                    redis_logger.debug(f"REDIS RECEIVE - Message: {json.dumps(message, default=str)}")
+                except ValueError as ve:
+                    redis_logger.warning(f"REDIS RECEIVE - Unexpected result format: {result}, Error: {str(ve)}")
+                    # For backward compatibility, just log the result as is
+                    redis_logger.info(f"REDIS RECEIVE SUCCESS - Result: {result}, Duration: {duration:.2f}ms")
             else:
                 redis_logger.debug(f"REDIS RECEIVE TIMEOUT - Duration: {duration:.2f}ms")
                 

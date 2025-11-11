@@ -5,9 +5,10 @@ export interface Room {
   code: string;
   session_name: string;
   created_at: string;
-  current_story: Story | null;
+  current_story: string | null;
   participants: Participant[];
   stories: Story[];
+  current_story_data?: Story;
 }
 
 export interface Participant {
@@ -56,6 +57,13 @@ export interface ConfirmPointsData {
   points: string;
 }
 
+export interface CleanRoomResponse {
+  message: string;
+  removed_count: number;
+  votes_removed: number;
+  removed_participants: string[];
+  room: Room;
+}
 class ApiClient {
   private baseUrl: string;
   private component = 'ApiClient';
@@ -168,6 +176,11 @@ class ApiClient {
   async confirmPoints(code: string, data: ConfirmPointsData): Promise<Room> {
     logger.userAction('Confirm points', { roomCode: code, ...data }, this.component);
     return this.makeRequest<Room>('POST', `/rooms/${code}/confirm_points/`, data);
+  }
+
+  async cleanRoom(code: string): Promise<CleanRoomResponse> {
+    logger.userAction('Clean room - remove disconnected participants', { roomCode: code }, this.component);
+    return this.makeRequest<CleanRoomResponse>('POST', `/rooms/${code}/clean_room/`);
   }
 }
 

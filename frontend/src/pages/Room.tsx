@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { Copy, RefreshCw, Eye, Plus, Check } from 'lucide-react';
+import { Copy, RefreshCw, Eye, Plus, Check, UserX, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,12 +11,15 @@ import CurrentStory from '@/components/CurrentStory';
 import ConfirmPointsDialog from '@/components/ConfirmPointsDialog';
 import type { Room as RoomType, VoteValue } from '@/types/index';
 import { VOTE_OPTIONS } from '@/types/index';
+import { logger, LogCategory } from '@/lib/logger';
+import { apiClient } from '@/lib/api';
 
 export default function Room() {
   const { code } = useParams<{ code: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const username = searchParams.get('username');
+  const componentName = 'Room';
 
   const [room, setRoom] = useState<RoomType | null>(null);
   const [selectedVote, setSelectedVote] = useState<VoteValue | null>(null);
@@ -30,6 +33,7 @@ export default function Room() {
   const [calculationResult, setCalculationResult] = useState<{average: number, rounded: number} | null>(null);
   const [existingStory, setExistingStory] = useState<any>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showCleanRoomConfirm, setShowCleanRoomConfirm] = useState(false);
 
   useEffect(() => {
     if (!username) {
@@ -128,6 +132,16 @@ export default function Room() {
             setShowConfirmDialog(false);
             setCalculationResult(null);
             setShowResetConfirm(false);
+            setShowCleanRoomConfirm(false);
+          }
+
+          // Handle clean room completion
+          if (data.type === 'room_cleaned') {
+            logger.info(LogCategory.WEBSOCKET_RECEIVE, 'Room cleaned notification received', {
+              removedCount: data.removed_count,
+              votesRemoved: data.votes_removed,
+              removedParticipants: data.removed_participants
+            }, componentName);
           }
 
           // Clear existing story dialog and selected vote when story changes
@@ -238,6 +252,26 @@ export default function Room() {
 
   const handleCancelReset = () => {
     setShowResetConfirm(false);
+  };
+
+  const handleCleanRoom = () => {
+    setShowCleanRoomConfirm(true);
+  };
+
+  const handleConfirmCleanRoom = () => {
+    if (!ws || ws.readyState !== WebSocket.OPEN || !code) return;
+
+    logger.userAction('Clean room requested', { roomCode: code }, componentName);
+    
+    ws.send(JSON.stringify({
+      type: 'clean_room'
+    }));
+
+    setShowCleanRoomConfirm(false);
+  };
+
+  const handleCancelCleanRoom = () => {
+    setShowCleanRoomConfirm(false);
   };
 
   const handleAddStory = () => {
@@ -371,6 +405,16 @@ export default function Room() {
             >
               <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Reset</span>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleCleanRoom}
+              size="sm"
+              className="text-xs sm:text-sm text-red-600 hover:text-red-700 hover:border-red-300"
+              data-testid="clean-room-button"
+            >
+              <UserX className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Clean Room</span>
             </Button>
             {/* Reveal/Finalize Button Logic */}
             {currentStory?.final_points ? (
@@ -562,6 +606,44 @@ export default function Room() {
                   >
                     <RefreshCw className="w-4 h-4 mr-2" />
                     Reset All Votes
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Clean Room Confirmation Dialog */}
+        {showCleanRoomConfirm && (
+          <div className="border-red-300 from-white via-red-50 to-pink-100 shadow-2xl backdrop-blur-lg border-2 rounded-3xl ring-1 ring-red-200/50 overflow-hidden" data-testid="clean-room-confirm-dialog">
+            <div className="p-6">
+              <div className="space-y-6">
+                <div className="text-center">
+                  <div className="w-16 h-16 mx-auto mb-4 from-red-100 to-red-200 rounded-full flex items-center justify-center">
+                    <UserX className="w-8 h-8 text-red-600" />
+                  </div>
+                  <div className="font-bold text-xl text-red-800 mb-2" data-testid="clean-room-confirm-title">Clean Room - Remove Disconnected Participants?</div>
+                  <div className="text-sm text-red-700 bg-red-100 rounded-lg p-3 border border-red-200">
+                    🧹 This will permanently remove all disconnected participants and their votes from this room. This action cannot be undone.
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={handleCancelCleanRoom}
+                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300"
+                    data-testid="cancel-clean-room-button"
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleConfirmCleanRoom}
+                    className="flex-1 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white shadow-lg"
+                    data-testid="confirm-clean-room-button"
+                  >
+                    <UserX className="w-4 h-4 mr-2" />
+                    Clean Room
                   </Button>
                 </div>
               </div>
