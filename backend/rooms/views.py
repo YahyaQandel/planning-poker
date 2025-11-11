@@ -1,3 +1,4 @@
+import logging
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -12,6 +13,10 @@ from .serializers import (
     CreateRoomSerializer,
     JoinRoomSerializer
 )
+
+# Set up logger for API operations
+api_logger = logging.getLogger('rooms.api')
+db_logger = logging.getLogger('rooms.database')
 
 
 class RoomViewSet(viewsets.ModelViewSet):
@@ -178,6 +183,67 @@ class RoomViewSet(viewsets.ModelViewSet):
             room.current_story.save()
 
         return Response(RoomSerializer(room).data)
+
+    @action(detail=True, methods=['post'])
+    def clean_room(self, request, code=None):
+        """Clean room - remove all disconnected participants and their votes"""
+        api_logger.info(f"API CLEAN_ROOM - Request to clean room {code}")
+        
+        try:
+            room = get_object_or_404(Room, code=code)
+            api_logger.info(f"API CLEAN_ROOM - Found room {code} with {room.participants.count()} participants")
+            
+            # Find all disconnected participants
+            disconnected_participants = room.participants.filter(connected=False)
+            participant_count = disconnected_participants.count()
+            
+            if participant_count == 0:
+                api_logger.info(f"API CLEAN_ROOM - No disconnected participants found in room {code}")
+                return Response({
+                    'message': 'No disconnected participants to remove',
+                    'removed_count': 0,
+                    'votes_removed': 0,
+                    'removed_participants': [],
+                    'room': RoomSerializer(room).data
+                })
+
+            # Log participant details before deletion
+            participant_usernames = list(disconnected_participants.values_list('username', flat=True))
+            api_logger.info(f"API CLEAN_ROOM - Found {participant_count} disconnected participants in room {code}: {participant_usernames}")
+            
+            # Delete votes associated with disconnected participants
+            votes_deleted = 0
+            for participant in disconnected_participants:
+                participant_votes = participant.votes.count()
+                db_logger.info(f"DB CLEAN - Removing {participant_votes} votes for disconnected participant {participant.username}")
+                participant.votes.all().delete()
+                votes_deleted += participant_votes
+                db_logger.info(f"DB CLEAN - Removed {participant_votes} votes for disconnected participant {participant.username}")
+
+            # Delete disconnected participants
+            db_logger.info(f"DB CLEAN - Removing {participant_count} disconnected participants from room {code}")
+            disconnected_participants.delete()
+            
+            result = {
+                'message': f'Successfully removed {participant_count} disconnected participants',
+                'removed_count': participant_count,
+                'votes_removed': votes_deleted,
+                'removed_participants': participant_usernames,
+                'room': RoomSerializer(room).data
+            }
+            
+            api_logger.info(f"API CLEAN_ROOM - Successfully cleaned room {code}: {result['message']}")
+            db_logger.info(f"DB CLEAN - Successfully cleaned room {code}: removed {participant_count} participants, {votes_deleted} votes")
+            
+            return Response(result, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            api_logger.error(f"API CLEAN_ROOM - Error cleaning room {code}: {str(e)}")
+            db_logger.error(f"DB CLEAN - Error cleaning room {code}: {str(e)}")
+            return Response(
+                {'error': f'Failed to clean room: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
     def calculate_planning_poker_estimate(self, votes):
         """Calculate estimate using Planning Poker best practices"""

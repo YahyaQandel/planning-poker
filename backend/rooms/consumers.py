@@ -1,9 +1,14 @@
 import json
+import logging
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.utils import timezone
 from .models import Room, Participant, Vote, Story
 from .serializers import RoomSerializer, ParticipantSerializer, VoteSerializer
+
+# Set up loggers
+websocket_logger = logging.getLogger('rooms.websocket')
+db_logger = logging.getLogger('rooms.database')
 
 
 class RoomConsumer(AsyncWebsocketConsumer):
@@ -64,6 +69,8 @@ class RoomConsumer(AsyncWebsocketConsumer):
             await self.handle_user_joined(data)
         elif message_type == 'user_left':
             await self.handle_user_left(data)
+        elif message_type == 'clean_room':
+            await self.handle_clean_room(data)
 
     async def handle_vote(self, data):
         participant_id = data.get('participant_id')
@@ -226,6 +233,36 @@ class RoomConsumer(AsyncWebsocketConsumer):
             }
         )
 
+    async def handle_clean_room(self, data):
+        """Handle cleaning all disconnected participants from the room"""
+        websocket_logger.info(f"WS CLEAN_ROOM - Request to clean room {self.room_code}")
+        
+        try:
+            result = await self.clean_disconnected_participants()
+            room_data = await self.get_room_data()
+            
+            websocket_logger.info(f"WS CLEAN_ROOM - Successfully cleaned room {self.room_code}: {result}")
+
+            # Broadcast clean room result to all participants
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'room_cleaned',
+                    'removed_count': result['removed_count'],
+                    'votes_removed': result['votes_removed'],
+                    'removed_participants': result['removed_participants'],
+                    'room': room_data
+                }
+            )
+            
+        except Exception as e:
+            websocket_logger.error(f"WS CLEAN_ROOM - Error cleaning room {self.room_code}: {str(e)}")
+            # Send error only to the requesting client
+            await self.send(text_data=json.dumps({
+                'type': 'clean_room_error',
+                'error': str(e)
+            }))
+
     # Broadcast handlers
     async def vote_cast(self, event):
         await self.send(text_data=json.dumps({
@@ -280,6 +317,16 @@ class RoomConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'type': 'user_left',
             'participant_id': event['participant_id'],
+            'room': event['room']
+        }))
+
+    async def room_cleaned(self, event):
+        """Broadcast room cleaned event to all participants"""
+        await self.send(text_data=json.dumps({
+            'type': 'room_cleaned',
+            'removed_count': event['removed_count'],
+            'votes_removed': event['votes_removed'],
+            'removed_participants': event['removed_participants'],
             'room': event['room']
         }))
 
@@ -565,3 +612,49 @@ class RoomConsumer(AsyncWebsocketConsumer):
         # Convert to JSON and back to ensure all UUIDs are converted to strings
         serialized_data = RoomSerializer(room).data
         return json.loads(json.dumps(serialized_data, default=str))
+
+    @database_sync_to_async
+    def clean_disconnected_participants(self):
+        """Clean all disconnected participants from the room"""
+        from .models import Room, Participant, Vote
+        
+        db_logger.info(f"DB CLEAN - Starting clean operation for room {self.room_code}")
+        
+        room = Room.objects.get(code=self.room_code)
+        
+        # Find all disconnected participants
+        disconnected_participants = Participant.objects.filter(room=room, connected=False)
+        participant_count = disconnected_participants.count()
+        
+        if participant_count == 0:
+            db_logger.info(f"DB CLEAN - No disconnected participants found in room {self.room_code}")
+            return {
+                'removed_count': 0,
+                'votes_removed': 0,
+                'removed_participants': []
+            }
+
+        # Log participant details before deletion
+        participant_usernames = list(disconnected_participants.values_list('username', flat=True))
+        db_logger.info(f"DB CLEAN - Found {participant_count} disconnected participants in room {self.room_code}: {participant_usernames}")
+        
+        # Delete votes associated with disconnected participants
+        votes_deleted = 0
+        for participant in disconnected_participants:
+            participant_votes = Vote.objects.filter(participant=participant).count()
+            Vote.objects.filter(participant=participant).delete()
+            votes_deleted += participant_votes
+            db_logger.info(f"DB CLEAN - Removed {participant_votes} votes for disconnected participant {participant.username}")
+
+        # Delete disconnected participants
+        db_logger.info(f"DB CLEAN - Removing {participant_count} disconnected participants from room {self.room_code}")
+        disconnected_participants.delete()
+        
+        result = {
+            'removed_count': participant_count,
+            'votes_removed': votes_deleted,
+            'removed_participants': participant_usernames
+        }
+        
+        db_logger.info(f"DB CLEAN - Successfully cleaned room {self.room_code}: {result}")
+        return result
