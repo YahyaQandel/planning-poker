@@ -135,18 +135,57 @@ A real-time planning poker application for agile teams to estimate story points 
   - Connection loss handling
   - Form validation
 
+### 9. Clean Room Functionality ✅
+- **Room Cleanup**:
+  - Remove all disconnected participants and their votes
+  - Clean room button with confirmation dialog
+  - Prevents ghost participants from accumulating
+  - Maintains room integrity during long sessions
+- **Automatic Cleanup**:
+  - Handles participants who close browser tabs
+  - Removes stale connections
+  - Preserves active participant data
+- **Real-time Updates**:
+  - Live participant count updates
+  - Immediate UI refresh after cleanup
+  - WebSocket notifications for all participants
+
+### 10. Comprehensive Logging System ✅
+- **Frontend Logging**:
+  - Structured logging with categories (USER_ACTION, API_REQUEST, WEBSOCKET, etc.)
+  - Component lifecycle tracking
+  - Performance monitoring with timing metrics
+  - User action logging with context
+  - API request/response logging with full payload data
+- **Backend Logging**:
+  - API endpoint logging with detailed request/response data
+  - Database operation logging with timing
+  - WebSocket connection and message logging
+  - Redis operation tracking and health monitoring
+- **Advanced Features**:
+  - Automatic error context capture
+  - Performance bottleneck identification
+  - Real-time debugging capabilities
+  - Comprehensive system health monitoring
+
 ## Technical Architecture
 
 ### Backend (Django)
 ```
 backend/
-├── config/              # Django settings, ASGI config
+├── config/              # Django settings, ASGI config  
 ├── rooms/               # Main application
 │   ├── models.py        # Room, Participant, Vote, Story
-│   ├── consumers.py     # WebSocket handlers with Planning Poker logic
+│   ├── consumers.py     # WebSocket handlers with Planning Poker logic & comprehensive logging
 │   ├── serializers.py   # DRF serializers
-│   ├── views.py         # REST API endpoints
-│   └── routing.py       # WebSocket routing
+│   ├── views.py         # REST API endpoints with detailed logging
+│   ├── routing.py       # WebSocket routing
+│   ├── signals.py       # Django model signals for database logging
+│   ├── redis_logger.py  # Redis channel layer logging wrapper
+│   ├── redis_health.py  # Redis health monitoring and statistics
+│   └── management/
+│       └── commands/
+│           └── redis_health_check.py  # Redis health check command
 └── requirements.txt
 ```
 
@@ -164,6 +203,7 @@ backend/
 - `POST /api/rooms/{code}/reveal/` - Reveal all votes
 - `POST /api/rooms/{code}/add_story/` - Add new story
 - `POST /api/rooms/{code}/confirm_points/` - Confirm final points
+- `POST /api/rooms/{code}/clean_room/` - Remove disconnected participants and votes
 - WebSocket: `/ws/room/{code}/` - Real-time communication
 
 #### WebSocket Events
@@ -177,6 +217,8 @@ backend/
 - `points_confirmed` - Final points saved
 - `story_exists` - Duplicate story warning
 - `discussion_message` - Wide spread discussion suggestion
+- `clean_room` - Room cleanup initiated
+- `room_cleaned` - Participants removed from room
 
 #### Planning Poker Calculation
 - `calculate_planning_poker_estimate()` - Smart Fibonacci rounding
@@ -202,7 +244,8 @@ frontend/
 │   │   └── use-toast.ts     # Toast notifications
 │   ├── lib/
 │   │   ├── utils.ts         # shadcn utils
-│   │   └── api.ts           # API client
+│   │   ├── api.ts           # API client with comprehensive logging
+│   │   └── logger.ts        # Frontend structured logging system
 │   └── styles/
 │       └── globals.css      # Purple theme styles
 ├── components.json          # shadcn config
@@ -254,6 +297,8 @@ frontend/
   ✅ Modern UI redesign
   ✅ Responsive design
   ✅ Error handling
+  ✅ Clean room functionality
+  ✅ Comprehensive logging system
   ✅ All core features implemented
 
 ## Recent Updates
@@ -279,11 +324,38 @@ frontend/
 - Orange warning banner in modal
 - Encourages re-voting after discussion
 
+### Clean Room Features ✅
+- Added room cleanup functionality to remove disconnected participants
+- Prevents accumulation of ghost participants during long sessions
+- Real-time UI updates after cleanup operations
+- Comprehensive API endpoint with proper error handling
+- WebSocket integration for live notifications
+
+### Comprehensive Logging System ✅
+- **Frontend Logging Infrastructure**:
+  - Structured logging with categories and performance tracking
+  - Component lifecycle and user action logging
+  - API request/response logging with full payload capture
+  - WebSocket event logging with detailed context
+- **Backend Logging Infrastructure**:
+  - API endpoint logging with request/response data and timing
+  - Database operation logging with performance metrics
+  - WebSocket connection and message logging
+  - Redis health monitoring and operation tracking
+- **Advanced Monitoring Features**:
+  - Real-time system health checks
+  - Performance bottleneck identification
+  - Automatic error context capture
+  - Comprehensive debugging capabilities
+
 ### Bug Fixes
 - Fixed modal close handling (X button/escape key)
 - Fixed state cleanup on modal dismiss
 - Improved WebSocket reconnection
 - Better error handling throughout
+- Fixed Redis channel layer error handling for production stability
+- Resolved merge conflicts and integrated all logging features
+- Fixed participant disconnection tracking issues
 
 ## Testing & Quality
 - Comprehensive test files for calculations
@@ -329,9 +401,14 @@ frontend/
 6. **Modal issues?** Fixed close handling ✓
 
 ## Key Files Updated
-- `backend/rooms/consumers.py` - Planning Poker logic
-- `backend/rooms/views.py` - API endpoints
-- `frontend/src/pages/RoomModern.tsx` - Main room interface
+- `backend/rooms/consumers.py` - Planning Poker logic & comprehensive WebSocket logging
+- `backend/rooms/views.py` - API endpoints with detailed request/response logging
+- `backend/rooms/signals.py` - Database operation logging and monitoring
+- `backend/rooms/redis_logger.py` - Redis channel layer logging wrapper
+- `backend/rooms/redis_health.py` - Redis health monitoring and statistics
+- `frontend/src/lib/logger.ts` - Frontend structured logging system
+- `frontend/src/lib/api.ts` - API client with comprehensive request logging
+- `frontend/src/pages/RoomModern.tsx` - Main room interface with clean room functionality
 - `frontend/src/pages/HomeModern.tsx` - Landing page
 - `frontend/src/components/modern/*` - All UI components
 - `frontend/src/components/ThemeProvider.tsx` - Light mode only
@@ -345,4 +422,7 @@ frontend/
 - ✅ Discussion prompts helpful
 - ✅ Story management intuitive
 - ✅ Mobile responsive
+- ✅ Clean room functionality prevents ghost participants
+- ✅ Comprehensive logging enables debugging and monitoring
+- ✅ Redis health monitoring ensures system stability
 - ✅ Production ready
